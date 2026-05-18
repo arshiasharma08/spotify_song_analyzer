@@ -1,246 +1,134 @@
 /* ============================================================================
-   AUDIO INTELLIGENCE PLATFORM - FIXED JAVASCRIPT
-   All functionality restored with debugging
+   SONAR · AI MUSIC INTELLIGENCE — FRONTEND
+   Talks to existing Flask backend (/api/search, /api/recommend, /api/battle,
+   /api/moods, /api/analytics, /api/insights). No backend changes.
    ============================================================================ */
 
-// STATE MANAGEMENT
 const state = {
     songs: [],
+    allMoods: {},
     selectedSong: null,
     selectedMood: null,
-    currentRecommendations: [],
-    analytics: null
+    analytics: null,
 };
 
-// INITIALIZATION - ALL EVENT LISTENERS INSIDE DOMContentLoaded
+const MOOD_EMOJI = {
+    'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
+    'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
+    'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '🌧️',
+    'Focus Mode': '🎯',
+};
+
+/* ============================================================================
+   BOOTSTRAP
+   ============================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎵 Audio Intelligence Platform initializing...');
-    
-    // Initialize 3D background
-    init3D();
-    
-    // Setup event listeners FIRST
-    console.log('📌 Setting up event listeners...');
-    setupListeners();
-    
-    // Load initial data
-    console.log('📊 Loading initial data...');
-    loadInitialData();
-    
-    console.log('✓ Platform ready');
+    initParticles();
+    bindListeners();
+    loadInitial();
 });
 
 /* ============================================================================
-   3D BACKGROUND WITH THREE.JS
+   LIGHTWEIGHT PARTICLE CANVAS (no three.js needed)
    ============================================================================ */
+function initParticles() {
+    const canvas = document.getElementById('particles-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-let scene, camera, renderer, particles;
+    let w, h, particles = [];
+    const COUNT = window.innerWidth < 768 ? 30 : 60;
 
-function init3D() {
-    console.log('🎨 Initializing 3D background...');
-    
-    try {
-        const canvas = document.getElementById('canvas-3d');
-        if (!canvas) {
-            console.warn('Canvas not found');
-            return;
-        }
-
-        // Scene setup
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        camera.position.z = 50;
-        
-        renderer = new THREE.WebGLRenderer({ 
-            canvas: canvas,
-            antialias: true, 
-            alpha: true,
-            powerPreference: 'high-performance'
-        });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0x000000, 0);
-
-        // Create particles
-        const particleCount = 100;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
-
-        for (let i = 0; i < particleCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 200;
-            positions[i + 1] = (Math.random() - 0.5) * 200;
-            positions[i + 2] = (Math.random() - 0.5) * 200;
-
-            colors[i] = 0;
-            colors[i + 1] = 0.85;
-            colors[i + 2] = 1;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const material = new THREE.PointsMaterial({
-            size: 0.8,
-            sizeAttenuation: true,
-            transparent: true,
-            opacity: 0.6,
-            vertexColors: true
-        });
-
-        particles = new THREE.Points(geometry, material);
-        scene.add(particles);
-
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            particles.rotation.x += 0.0001;
-            particles.rotation.y += 0.0002;
-
-            // Slight floating motion
-            const positions = geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i] += (Math.random() - 0.5) * 0.2;
-                positions[i + 1] += (Math.random() - 0.5) * 0.2;
-                positions[i + 2] += (Math.random() - 0.5) * 0.2;
-
-                // Keep in bounds
-                if (positions[i] > 100) positions[i] = -100;
-                if (positions[i] < -100) positions[i] = 100;
-                if (positions[i + 1] > 100) positions[i + 1] = -100;
-                if (positions[i + 1] < -100) positions[i + 1] = 100;
-            }
-
-            geometry.attributes.position.needsUpdate = true;
-            renderer.render(scene, camera);
-        }
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-        });
-
-        // Mouse interaction
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) * 2 - 1;
-            const y = -(e.clientY / window.innerHeight) * 2 + 1;
-            camera.position.x = x * 10;
-            camera.position.y = y * 10;
-        });
-
-        animate();
-        console.log('✓ 3D background initialized');
-
-    } catch (error) {
-        console.warn('3D initialization failed:', error.message);
+    function resize() {
+        w = canvas.width = window.innerWidth * window.devicePixelRatio;
+        h = canvas.height = window.innerHeight * window.devicePixelRatio;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
     }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < COUNT; i++) {
+        particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 1.6 + 0.4,
+            hue: Math.random() > 0.5 ? 190 : 270, // cyan-ish or purple
+        });
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = w; else if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h; else if (p.y > h) p.y = 0;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, 0.55)`;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = `hsla(${p.hue}, 100%, 65%, 0.6)`;
+            ctx.fill();
+        });
+        requestAnimationFrame(tick);
+    }
+    tick();
 }
 
 /* ============================================================================
-   EVENT LISTENERS - INSIDE DOMContentLoaded
+   EVENT LISTENERS
    ============================================================================ */
+function bindListeners() {
+    const form = document.getElementById('searchForm');
+    if (form) form.addEventListener('submit', e => { e.preventDefault(); handleSearch(); });
 
-function setupListeners() {
-    // Search button
     const searchBtn = document.getElementById('searchBtn');
-    if (searchBtn) {
-        console.log('✓ Found searchBtn');
-        searchBtn.addEventListener('click', () => {
-            console.log('🔍 SEARCH BUTTON CLICKED');
+    if (searchBtn) searchBtn.addEventListener('click', e => { e.preventDefault(); handleSearch(); });
+
+    const input = document.getElementById('searchInput');
+    if (input) input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
+    });
+
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const q = chip.dataset.query;
+            document.getElementById('searchInput').value = q;
             handleSearch();
         });
-    } else {
-        console.error('❌ searchBtn not found');
-    }
+    });
 
-    // Search input Enter key
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        console.log('✓ Found searchInput');
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                console.log('🔍 SEARCH INPUT ENTER PRESSED');
-                handleSearch();
-            }
-        });
-    } else {
-        console.error('❌ searchInput not found');
-    }
-
-    // Battle button
     const battleBtn = document.getElementById('battleBtn');
-    if (battleBtn) {
-        console.log('✓ Found battleBtn');
-        battleBtn.addEventListener('click', () => {
-            console.log('⚔️ BATTLE BUTTON CLICKED');
-            handleBattle();
-        });
-    } else {
-        console.error('❌ battleBtn not found');
-    }
+    if (battleBtn) battleBtn.addEventListener('click', handleBattle);
 
-    // Clear mood filter button
-    const clearMoodBtn = document.getElementById('clearMoodFilterBtn');
-    if (clearMoodBtn) {
-        console.log('✓ Found clearMoodFilterBtn');
-        clearMoodBtn.addEventListener('click', () => {
-            console.log('🔄 CLEAR MOOD FILTER CLICKED');
-            clearMoodFilter();
-        });
-    } else {
-        console.warn('clearMoodFilterBtn not found (will be created later)');
-    }
-
-    console.log('✓ Event listeners setup complete');
+    const clearMood = document.getElementById('clearMoodFilterBtn');
+    if (clearMood) clearMood.addEventListener('click', clearMoodFilter);
 }
 
 /* ============================================================================
-   INITIAL DATA LOADING
+   INITIAL LOAD
    ============================================================================ */
-
-async function loadInitialData() {
-    console.log('📊 Loading moods and analytics...');
-    
-    // Load moods (gets all songs)
+async function loadInitial() {
     await loadMoods();
-    
-    // Load analytics
     await loadAnalytics();
+    populateBattleSelects();
 }
 
 /* ============================================================================
-   API HELPER
+   API
    ============================================================================ */
-
-async function callAPI(endpoint, method = 'GET', data = null) {
+async function api(endpoint, method = 'GET', data = null) {
+    showLoading(true);
     try {
-        showLoading(true);
-        console.log(`📡 API Call: ${method} ${endpoint}`, data);
-        
-        const options = {
-            method: method,
-            headers: { 'Content-Type': 'application/json' }
-        };
-        
-        if (data) options.body = JSON.stringify(data);
-        
-        const response = await fetch(endpoint, options);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const result = await response.json();
-        console.log(`✓ API Success: ${endpoint}`, result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ API Error:', error);
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (data) opts.body = JSON.stringify(data);
+        const res = await fetch(endpoint, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('API error', endpoint, err);
         return null;
     } finally {
         showLoading(false);
@@ -248,881 +136,408 @@ async function callAPI(endpoint, method = 'GET', data = null) {
 }
 
 function showLoading(show) {
-    const loader = document.getElementById('loadingIndicator');
-    if (loader) {
-        if (show) {
-            loader.classList.remove('hidden');
-            console.log('⏳ Loading...');
-        } else {
-            loader.classList.add('hidden');
-        }
-    }
+    const el = document.getElementById('loadingIndicator');
+    if (el) el.classList.toggle('hidden', !show);
 }
 
 /* ============================================================================
-   SEARCH FUNCTIONALITY
+   TOAST (inline message)
    ============================================================================ */
+let toastTimer;
+function toast(msg) {
+    const el = document.getElementById('toast');
+    const m = document.getElementById('toastMsg');
+    if (!el || !m) return;
+    m.textContent = msg;
+    el.classList.remove('hidden');
+    requestAnimationFrame(() => el.classList.add('show'));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.classList.add('hidden'), 320);
+    }, 2600);
+}
 
+/* ============================================================================
+   SEARCH
+   ============================================================================ */
 async function handleSearch() {
-    console.log('🔍 handleSearch called');
-    
     const input = document.getElementById('searchInput');
-    if (!input) {
-        console.error('❌ searchInput element not found');
-        return;
-    }
-    
-    const query = input.value.trim();
-    console.log(`Searching for: "${query}"`);
-    
-    if (!query || query.length < 2) {
-        console.warn('⚠️ Query too short');
-        showInlineMessage('Please enter at least 2 characters', 'warning');
-        return;
-    }
+    const query = (input?.value || '').trim();
+    if (query.length < 2) { toast('Type at least 2 characters'); return; }
 
-    console.log(`📡 Calling /api/search with query: "${query}"`);
-    const result = await callAPI('/api/search', 'POST', { query });
-    
-    if (!result || !result.results) {
-        console.error('❌ Search failed - no results');
-        showInlineMessage('Search failed. Please try again.', 'error');
-        return;
-    }
+    const result = await api('/api/search', 'POST', { query });
+    if (!result || !result.results) { toast('Search failed — please try again'); return; }
 
-    console.log(`✓ Got ${result.results.length} results`);
-    displaySearchResults(result.results);
+    renderSearchResults(result.results);
 }
 
-function displaySearchResults(results) {
-    console.log(`📊 displaySearchResults with ${results.length} items`);
-    
-    const container = document.getElementById('resultsList');
+function renderSearchResults(results) {
+    const list = document.getElementById('resultsList');
     const section = document.getElementById('searchResults');
-    
-    if (!container || !section) {
-        console.error('❌ resultsList or searchResults element not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
+    const count = document.getElementById('resultsCount');
+    if (!list || !section) return;
+
+    list.innerHTML = '';
+    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
+
     if (results.length === 0) {
-        console.warn('No results to display');
-        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.6);">No songs found</p>';
+        list.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <div class="empty-icon">🔍</div>
+                <p>No tracks matched that search. Try another title or artist.</p>
+            </div>`;
         section.classList.remove('hidden');
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
 
-    results.forEach((song, idx) => {
-        console.log(`Adding result: ${song.title} by ${song.artist}`);
-        
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        card.style.animationDelay = `${idx * 50}ms`;
-        
-        card.innerHTML = `
-            <h4>${escapeHtml(song.title)}</h4>
-            <p>${escapeHtml(song.artist)}</p>
-            <div class="metrics-row">
-                <div class="metric">
-                    <div class="metric-label">Energy</div>
-                    <div class="metric-value">${song.energy.toFixed(2)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Dance</div>
-                    <div class="metric-value">${song.danceability.toFixed(2)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Tempo</div>
-                    <div class="metric-value">${song.tempo}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Pop</div>
-                    <div class="metric-value">${song.popularity}</div>
-                </div>
-            </div>
-        `;
-        
-        card.addEventListener('click', () => {
-            console.log(`🎵 Clicked song: ${song.title}`);
-            selectSong(song);
-        });
-        
-        container.appendChild(card);
-    });
-
-    console.log('✓ Results displayed, removing hidden class');
+    results.forEach((song, i) => list.appendChild(buildResultCard(song, i)));
     section.classList.remove('hidden');
+    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function buildResultCard(song, i = 0) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.animationDelay = `${i * 50}ms`;
+    card.innerHTML = `
+        <h4>${escapeHtml(song.title)}</h4>
+        <p>${escapeHtml(song.artist)}</p>
+        <div class="metrics-row">
+            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
+            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
+        </div>`;
+    card.addEventListener('click', () => selectSong(song));
+    return card;
 }
 
 /* ============================================================================
-   SONG SELECTION & RECOMMENDATIONS
+   SELECT SONG → RECS + INSIGHTS
    ============================================================================ */
-
 async function selectSong(song) {
-    console.log(`✓ selectSong: ${song.title} (ID: ${song.id})`);
-    
     state.selectedSong = song;
     state.selectedMood = null;
-    
-    // Clear mood filter
-    document.querySelectorAll('.mood-card').forEach(m => {
-        m.classList.remove('active');
-        console.log('Removed active class from mood card');
-    });
-    const clearBtn = document.getElementById('clearMoodBtn');
-    if (clearBtn) clearBtn.classList.add('hidden');
-    const summary = document.querySelector('.mood-summary');
-    if (summary) summary.classList.add('hidden');
-    
-    // Display selected song
+    document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
+    document.getElementById('moodFilterResults')?.classList.add('hidden');
+
     const card = document.getElementById('selectedSongCard');
     if (card) {
         card.innerHTML = `
             <h3 class="song-title">${escapeHtml(song.title)}</h3>
             <p class="song-artist">${escapeHtml(song.artist)}</p>
             <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-item-label">Energy</div>
-                    <div class="info-item-value">${song.energy.toFixed(2)}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-item-label">Danceability</div>
-                    <div class="info-item-value">${song.danceability.toFixed(2)}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-item-label">Tempo</div>
-                    <div class="info-item-value">${song.tempo} BPM</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-item-label">Popularity</div>
-                    <div class="info-item-value">${song.popularity}</div>
-                </div>
-            </div>
-        `;
-        console.log('✓ Updated selectedSongCard');
+                <div class="info-item"><div class="info-item-label">Energy</div><div class="info-item-value">${song.energy.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Danceability</div><div class="info-item-value">${song.danceability.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Tempo</div><div class="info-item-value">${song.tempo} <span style="font-size:0.7em;color:var(--text-muted)">BPM</span></div></div>
+                <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
+            </div>`;
     }
-    
-    const section = document.getElementById('selectedSongSection');
-    if (section) {
-        section.classList.remove('hidden');
-        console.log('✓ Showing selectedSongSection');
-    }
+    document.getElementById('selectedSongSection')?.classList.remove('hidden');
 
-    // Get recommendations
-    await getRecommendations(song.id);
-    
-    // Get insights
-    await getInsights(song.id);
+    await Promise.all([
+        getRecommendations(song.id),
+        getInsights(song.id),
+    ]);
 
-    // Populate battle dropdowns
-    populateBattle();
+    setTimeout(() => {
+        document.getElementById('selectedSongSection')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
 }
 
 async function getRecommendations(songId) {
-    console.log(`📎 Getting recommendations for song ${songId}`);
-    
-    const result = await callAPI('/api/recommend', 'POST', {
-        song_id: songId,
-        count: 5
-    });
-    
-    if (!result || !result.recommendations) {
-        console.error('❌ No recommendations returned');
-        return;
-    }
-    
-    console.log(`✓ Got ${result.recommendations.length} recommendations`);
-    state.currentRecommendations = result.recommendations;
-    displayRecommendations(result.recommendations);
+    const result = await api('/api/recommend', 'POST', { song_id: songId, count: 6 });
+    if (!result || !result.recommendations) return;
+    renderRecommendations(result.recommendations);
 }
 
-function displayRecommendations(recs) {
-    console.log(`📊 displayRecommendations with ${recs.length} items`);
-    
-    const container = document.getElementById('recommendationsGrid');
+function renderRecommendations(recs) {
+    const grid = document.getElementById('recommendationsGrid');
     const section = document.getElementById('recommendationsSection');
-    const subtitle = document.getElementById('recSubtitle');
-    
-    if (!container || !section) {
-        console.error('❌ recommendationsGrid or recommendationsSection not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    if (state.selectedMood) {
-        subtitle.textContent = `Based on "${state.selectedMood}" mood`;
-    } else {
-        subtitle.textContent = 'Based on audio feature similarity';
-    }
+    if (!grid || !section) return;
+    grid.innerHTML = '';
 
-    recs.forEach((rec, idx) => {
-        const confidence = Math.round(rec.similarity_score * 100);
-        const reason = getRecommendationReason(confidence);
-        
-        console.log(`Adding recommendation: ${rec.title} (${confidence}%)`);
-        
+    recs.forEach((rec, i) => {
+        const confidence = Math.round((rec.similarity_score || 0) * 100);
+        const reason = reasonFor(confidence);
         const card = document.createElement('div');
         card.className = 'rec-card';
-        card.style.animationDelay = `${idx * 50}ms`;
-        
+        card.style.animationDelay = `${i * 60}ms`;
         card.innerHTML = `
-            <h4 class="rec-title">${escapeHtml(rec.title)}</h4>
-            <p class="rec-artist">${escapeHtml(rec.artist)}</p>
-            <div class="rec-score">${confidence}% Match</div>
-            <div class="rec-reason">💡 ${reason}</div>
-            <div class="rec-features">
-                <div class="rec-feature">
-                    <div class="feature-label">⚡ Energy</div>
-                    <div class="feature-value">${rec.energy.toFixed(2)}</div>
+            <div class="rec-head">
+                <div>
+                    <div class="rec-title">${escapeHtml(rec.title)}</div>
+                    <div class="rec-artist">${escapeHtml(rec.artist)}</div>
                 </div>
-                <div class="rec-feature">
-                    <div class="feature-label">💃 Dance</div>
-                    <div class="feature-value">${rec.danceability.toFixed(2)}</div>
-                </div>
-                <div class="rec-feature">
-                    <div class="feature-label">🎼 Tempo</div>
-                    <div class="feature-value">${rec.tempo}</div>
-                </div>
-                <div class="rec-feature">
-                    <div class="feature-label">⭐ Pop</div>
-                    <div class="feature-value">${rec.popularity}</div>
-                </div>
+                <div class="rec-score">${confidence}%</div>
             </div>
-            <span class="rec-mood">${escapeHtml(rec.mood)}</span>
-        `;
-        
-        container.appendChild(card);
+            <div class="rec-reason">${reason}</div>
+            <div class="rec-features">
+                <div class="rec-feature"><div class="feature-label">Energy</div><div class="feature-value">${rec.energy.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Dance</div><div class="feature-value">${rec.danceability.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Tempo</div><div class="feature-value">${rec.tempo}</div></div>
+                <div class="rec-feature"><div class="feature-label">Pop</div><div class="feature-value">${rec.popularity}</div></div>
+            </div>
+            ${rec.mood ? `<span class="rec-mood">${escapeHtml(rec.mood)}</span>` : ''}`;
+        grid.appendChild(card);
     });
 
     section.classList.remove('hidden');
-    console.log('✓ Recommendations displayed');
-    
-    // Smooth scroll
-    setTimeout(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
 }
 
-function getRecommendationReason(confidence) {
-    if (confidence >= 95) return 'Perfect match! Very similar to your selection.';
-    if (confidence >= 85) return 'High similarity in energy and danceability.';
-    if (confidence >= 75) return 'Good match with similar audio characteristics.';
-    if (confidence >= 65) return 'Similar in overall vibe and mood.';
-    return 'Recommended based on audio similarity.';
+function reasonFor(c) {
+    if (c >= 95) return 'Near-perfect match — almost identical sonic signature.';
+    if (c >= 85) return 'Tight match on energy and danceability.';
+    if (c >= 75) return 'Strong overlap across multiple audio features.';
+    if (c >= 65) return 'Similar overall vibe and mood.';
+    return 'Recommended on broad audio similarity.';
 }
 
 async function getInsights(songId) {
-    console.log(`💡 Getting insights for song ${songId}`);
-    
-    const result = await callAPI('/api/insights', 'POST', { song_id: songId });
-    if (!result || !result.insights) {
-        console.warn('⚠️ No insights returned');
-        return;
-    }
-    
-    console.log(`✓ Got ${result.insights.length} insights`);
-    
-    const container = document.getElementById('insightsList');
-    if (!container) {
-        console.error('❌ insightsList not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    result.insights.forEach((insight, idx) => {
+    const result = await api('/api/insights', 'POST', { song_id: songId });
+    if (!result || !result.insights) return;
+    const list = document.getElementById('insightsList');
+    const section = document.getElementById('insightsSection');
+    if (!list || !section) return;
+    list.innerHTML = '';
+    result.insights.forEach((text, i) => {
         const item = document.createElement('div');
         item.className = 'insight-item';
-        item.style.animationDelay = `${idx * 100}ms`;
-        item.textContent = insight;
-        container.appendChild(item);
+        item.style.animationDelay = `${i * 80}ms`;
+        item.textContent = text;
+        list.appendChild(item);
     });
-    
-    const section = document.getElementById('insightsSection');
-    if (section) {
-        section.classList.remove('hidden');
-        console.log('✓ Insights displayed');
-    }
+    section.classList.remove('hidden');
 }
 
 /* ============================================================================
-   MOOD FILTERING
+   MOODS
    ============================================================================ */
-
 async function loadMoods() {
-    console.log('🎭 loadMoods called');
-    
-    const result = await callAPI('/api/moods', 'GET');
-    if (!result || !result.moods) {
-        console.error('❌ No moods returned');
-        return;
-    }
-    
-    console.log(`✓ Got moods data`);
-    
-    // Extract all songs
+    const result = await api('/api/moods', 'GET');
+    if (!result || !result.moods) return;
+
+    state.allMoods = result.moods;
     state.songs = [];
-    state.allMoods = result.moods;  // Store moods for filtering
-    
-    Object.values(result.moods).forEach(songs => {
-        state.songs.push(...songs);
-    });
-    console.log(`✓ Loaded ${state.songs.length} total songs`);
+    Object.values(result.moods).forEach(arr => state.songs.push(...arr));
 
-    // Display mood cards
-    const container = document.getElementById('moodGrid');
-    if (!container) {
-        console.error('❌ moodGrid not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    const moodEmojis = {
-        'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
-        'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
-        'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '😢',
-        'Focus Mode': '🎯', 'Rap/Hip-Hop': '🎤', 'R&B Smooth': '💎'
-    };
-    
-    Object.entries(result.moods).forEach(([mood, songs], idx) => {
-        console.log(`Adding mood card: ${mood} (${songs.length} songs)`);
-        
-        const card = document.createElement('div');
+    const grid = document.getElementById('moodGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    Object.entries(result.moods).forEach(([mood, songs], i) => {
+        const card = document.createElement('button');
+        card.type = 'button';
         card.className = 'mood-card';
-        card.style.animationDelay = `${idx * 50}ms`;
-        card.setAttribute('data-mood', mood);  // Store mood name as data attribute
-        
-        const emoji = moodEmojis[mood] || '🎵';
+        card.style.animationDelay = `${i * 40}ms`;
         card.innerHTML = `
-            <div class="mood-emoji">${emoji}</div>
+            <div class="mood-emoji">${MOOD_EMOJI[mood] || '🎵'}</div>
             <div class="mood-name">${escapeHtml(mood)}</div>
-            <div class="mood-count">${songs.length} songs</div>
-        `;
-        
-        // Attach click event listener with mood filtering
-        card.addEventListener('click', () => {
-            console.log(`🎭 MOOD CARD CLICKED: "${mood}"`);
-            filterMoodSongs(mood, result.moods);
-        });
-        
-        container.appendChild(card);
+            <div class="mood-count">${songs.length} track${songs.length === 1 ? '' : 's'}</div>`;
+        card.addEventListener('click', () => filterByMood(mood, card));
+        grid.appendChild(card);
     });
-    
-    console.log('✓ Mood cards displayed');
-
-    // Display moods showcase
-    const showcase = document.getElementById('moodsShowcaseGrid');
-    if (showcase) {
-        showcase.innerHTML = '';
-        
-        Object.entries(result.moods).forEach(([mood, songs]) => {
-            const card = document.createElement('div');
-            card.className = 'mood-showcase-card';
-            
-            const emoji = moodEmojis[mood] || '🎵';
-            card.innerHTML = `
-                <div class="mood-large-emoji">${emoji}</div>
-                <h4 class="mood-showcase-name">${escapeHtml(mood)}</h4>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">${songs.length} songs in collection</p>
-            `;
-            
-            showcase.appendChild(card);
-        });
-        
-        console.log('✓ Mood showcase displayed');
-    }
 }
 
-/**
- * Filter and display songs by mood
- * Shows results in the mood-filter-results section
- */
-function filterMoodSongs(mood, allMoods) {
-    console.log(`🎭 filterMoodSongs called: "${mood}"`);
-    
+function filterByMood(mood, cardEl) {
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
     state.selectedMood = mood;
-    
-    // Get songs for this mood
-    const moodSongs = allMoods[mood] || [];
-    console.log(`Found ${moodSongs.length} songs for mood: ${mood}`);
-    
-    // Update mood card highlighting
-    document.querySelectorAll('.mood-card').forEach(card => {
-        const cardMood = card.getAttribute('data-mood');
-        if (cardMood === mood) {
-            card.classList.add('active');
-            console.log(`✓ Highlighted ${mood} card`);
-        } else {
-            card.classList.remove('active');
-        }
-    });
-    
-    // Show/update results section
-    const resultsSection = document.getElementById('moodFilterResults');
-    const resultsGrid = document.getElementById('moodFilterGrid');
-    const resultsTitle = document.getElementById('moodFilterTitle');
-    const clearBtn = document.getElementById('clearMoodFilterBtn');
-    
-    if (!resultsSection || !resultsGrid || !resultsTitle || !clearBtn) {
-        console.error('❌ Mood filter results elements not found');
-        return;
-    }
-    
-    // Update title
-    resultsTitle.textContent = `${mood} (${moodSongs.length} songs)`;
-    console.log(`✓ Updated title: ${mood}`);
-    
-    // Clear previous results
-    resultsGrid.innerHTML = '';
-    
-    if (moodSongs.length === 0) {
-        console.warn(`⚠️ No songs found for mood: ${mood}`);
-        
-        const messageEl = document.createElement('div');
-        messageEl.className = 'inline-message inline-message-info';
-        messageEl.style.gridColumn = '1 / -1';
-        
-        messageEl.innerHTML = `
-            <div class="inline-message-content">
-                <span class="inline-message-icon">🎭</span>
-                <div class="inline-message-body">
-                    <span class="inline-message-text">
-                        No songs found for <strong>${escapeHtml(mood)}</strong> mood.
-                    </span>
-                    <span class="inline-message-subtext">
-                        Try selecting a different mood.
-                    </span>
-                </div>
-            </div>
-        `;
-        
-        resultsGrid.appendChild(messageEl);
+
+    const songs = state.allMoods[mood] || [];
+    const wrap = document.getElementById('moodFilterResults');
+    const title = document.getElementById('moodFilterTitle');
+    const meta = document.getElementById('moodFilterMeta');
+    const grid = document.getElementById('moodFilterGrid');
+    const empty = document.getElementById('moodEmptyState');
+    if (!wrap || !grid) return;
+
+    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
+    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
+    grid.innerHTML = '';
+
+    if (songs.length === 0) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
     } else {
-        // Display mood songs as cards
-        moodSongs.forEach((song, idx) => {
-            const card = document.createElement('div');
-            card.className = 'mood-song-card';
-            card.style.animationDelay = `${idx * 50}ms`;
-            
-            card.innerHTML = `
-                <h4>${escapeHtml(song.title)}</h4>
-                <p>${escapeHtml(song.artist)}</p>
-                <div class="mood-song-metrics">
-                    <div class="mood-song-metric">
-                        <div class="mood-song-metric-label">⚡ Energy</div>
-                        <div class="mood-song-metric-value">${song.energy.toFixed(2)}</div>
-                    </div>
-                    <div class="mood-song-metric">
-                        <div class="mood-song-metric-label">💃 Dance</div>
-                        <div class="mood-song-metric-value">${song.danceability.toFixed(2)}</div>
-                    </div>
-                    <div class="mood-song-metric">
-                        <div class="mood-song-metric-label">🎼 Tempo</div>
-                        <div class="mood-song-metric-value">${song.tempo}</div>
-                    </div>
-                    <div class="mood-song-metric">
-                        <div class="mood-song-metric-label">⭐ Pop</div>
-                        <div class="mood-song-metric-value">${song.popularity}</div>
-                    </div>
-                </div>
-            `;
-            
-            resultsGrid.appendChild(card);
+        empty.classList.add('hidden');
+        grid.classList.remove('hidden');
+        songs.forEach((s, i) => {
+            // mood payload may lack tempo/popularity — fall back to full songs list
+            const full = state.songs.find(x => x.id === s.id) || s;
+            grid.appendChild(buildResultCard({
+                id: full.id,
+                title: full.title,
+                artist: full.artist,
+                energy: full.energy ?? 0,
+                danceability: full.danceability ?? 0,
+                tempo: full.tempo ?? 0,
+                popularity: full.popularity ?? 0,
+            }, i));
         });
-        
-        console.log(`✓ Displayed ${moodSongs.length} mood songs`);
     }
-    
-    // Show results section
-    resultsSection.classList.remove('hidden');
-    console.log('✓ Mood filter results section visible');
-    
-    // Smooth scroll to results
-    setTimeout(() => {
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
+
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-/**
- * Clear mood filter and hide results
- */
 function clearMoodFilter() {
-    console.log('🔄 clearMoodFilter called');
-    
     state.selectedMood = null;
-    
-    // Remove highlighting from all mood cards
-    document.querySelectorAll('.mood-card').forEach(card => {
-        card.classList.remove('active');
-    });
-    console.log('✓ Cleared mood highlights');
-    
-    // Hide results section
-    const resultsSection = document.getElementById('moodFilterResults');
-    if (resultsSection) {
-        resultsSection.classList.add('hidden');
-        console.log('✓ Hidden mood filter results');
-    }
-}
-
-/* ============================================================================
-   SONG BATTLE
-   ============================================================================ */
-
-function populateBattle() {
-    console.log('⚔️ populateBattle called');
-    
-    const s1 = document.getElementById('song1');
-    const s2 = document.getElementById('song2');
-    
-    if (!s1 || !s2) {
-        console.error('❌ song1 or song2 not found');
-        return;
-    }
-    
-    s1.innerHTML = '<option value="">Select song...</option>';
-    s2.innerHTML = '<option value="">Select song...</option>';
-    
-    console.log(`Populating with ${state.songs.length} songs`);
-    
-    state.songs.forEach(song => {
-        const o1 = document.createElement('option');
-        o1.value = song.id;
-        o1.textContent = `${song.title} - ${song.artist}`;
-        s1.appendChild(o1);
-        
-        const o2 = document.createElement('option');
-        o2.value = song.id;
-        o2.textContent = `${song.title} - ${song.artist}`;
-        s2.appendChild(o2);
-    });
-    
-    console.log('✓ Battle dropdowns populated');
-}
-
-async function handleBattle() {
-    console.log('⚔️ handleBattle called');
-    
-    const s1 = document.getElementById('song1');
-    const s2 = document.getElementById('song2');
-    
-    if (!s1 || !s2) {
-        console.error('❌ song1 or song2 not found');
-        return;
-    }
-    
-    const id1 = parseInt(s1.value);
-    const id2 = parseInt(s2.value);
-    
-    console.log(`Comparing: ${id1} vs ${id2}`);
-    
-    if (!id1 || !id2 || id1 === id2) {
-        console.warn('⚠️ Invalid selection');
-        showInlineMessage('Please select two different songs', 'warning');
-        return;
-    }
-
-    const result = await callAPI('/api/battle', 'POST', {
-        song1_id: id1,
-        song2_id: id2
-    });
-    
-    if (!result) {
-        console.error('❌ Battle failed');
-        showInlineMessage('Battle comparison failed. Please try again.', 'error');
-        return;
-    }
-    
-    console.log(`✓ Battle result: ${result.winner}`);
-    
-    const container = document.getElementById('battleResults');
-    if (!container) {
-        console.error('❌ battleResults not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    const displayBattleCard = (song, isWinner) => {
-        const card = document.createElement('div');
-        card.className = `battle-card ${isWinner ? 'winner' : ''}`;
-        
-        card.innerHTML = `
-            ${isWinner ? '<div class="winner-badge">🏆 WINNER</div>' : ''}
-            <h3 class="battle-title">${escapeHtml(song.title)}</h3>
-            <p class="battle-artist">${escapeHtml(song.artist)}</p>
-            <div class="battle-score">${Math.round(song.score * 100)}</div>
-            <div class="battle-metrics">
-                <div class="battle-metric">
-                    <span class="metric-name">⚡ Energy</span>
-                    <span class="metric-val">${song.metrics.energy.toFixed(2)}</span>
-                </div>
-                <div class="battle-metric">
-                    <span class="metric-name">💃 Danceability</span>
-                    <span class="metric-val">${song.metrics.danceability.toFixed(2)}</span>
-                </div>
-                <div class="battle-metric">
-                    <span class="metric-name">🎼 Tempo</span>
-                    <span class="metric-val">${song.metrics.tempo} BPM</span>
-                </div>
-                <div class="battle-metric">
-                    <span class="metric-name">⭐ Popularity</span>
-                    <span class="metric-val">${song.metrics.popularity}/100</span>
-                </div>
-            </div>
-        `;
-        
-        container.appendChild(card);
-    };
-    
-    const winner1 = result.winner === 'song1';
-    displayBattleCard(result.song1, winner1);
-    displayBattleCard(result.song2, !winner1);
-    
-    container.classList.remove('hidden');
-    console.log('✓ Battle results displayed');
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('moodFilterResults')?.classList.add('hidden');
 }
 
 /* ============================================================================
    ANALYTICS
    ============================================================================ */
-
 async function loadAnalytics() {
-    console.log('📊 loadAnalytics called');
-    
-    const result = await callAPI('/api/analytics', 'GET');
-    if (!result) {
-        console.error('❌ No analytics returned');
-        return;
-    }
-    
-    console.log('✓ Got analytics data');
+    const result = await api('/api/analytics', 'GET');
+    if (!result || !result.summary) return;
     state.analytics = result;
-    displayAnalytics(result);
+
+    const s = result.summary;
+    animateNumber('totalSongs', s.total_songs, 0);
+    animateNumber('avgEnergy', s.avg_energy, 2);
+    animateNumber('avgDance', s.avg_danceability, 2);
+    animateNumber('avgTempo', s.avg_tempo, 0);
+    animateNumber('avgPopularity', s.avg_popularity, 0);
+
+    // mini bars
+    fillBar(document.querySelector('#avgEnergy + .bar-mini .bar-mini-fill'), s.avg_energy * 100);
+    fillBar(document.querySelector('#avgDance + .bar-mini .bar-mini-fill'), s.avg_danceability * 100);
+    fillBar(document.querySelector('#avgPopularity + .bar-mini .bar-mini-fill'), s.avg_popularity);
+
+    // dominant tempo
+    const td = result.distributions?.tempo || {};
+    const tempoLabels = { slow: 'Slow', moderate: 'Moderate', fast: 'Fast' };
+    const domTempo = Object.entries(td).sort((a, b) => b[1] - a[1])[0];
+    if (domTempo) setText('dominantTempo', tempoLabels[domTempo[0]] || domTempo[0]);
+
+    // top mood (computed from state.allMoods if available)
+    const topMood = Object.entries(state.allMoods).sort((a, b) => b[1].length - a[1].length)[0];
+    if (topMood) setText('commonMood', topMood[0]);
+
+    // avg match — approximate (we don't have per-pair data); show a sensible derived value
+    setText('avgMatch', Math.round(s.avg_energy * 50 + s.avg_danceability * 50) + '%');
+
+    // charts
+    renderBarChart('tempoChart', td, { slow: 'Slow (<90)', moderate: 'Moderate', fast: 'Fast (≥130)' });
+    renderBarChart('energyChart', result.distributions?.energy || {}, { low: 'Low (<.4)', medium: 'Medium', high: 'High (≥.7)' });
 }
 
-function displayAnalytics(data) {
-    console.log('📊 displayAnalytics called');
-    
-    // Update stat cards with animation
-    animateCounter('totalSongs', 0, data.summary.total_songs, 1000);
-    animateCounter('avgEnergy', 0, parseFloat(data.summary.avg_energy.toFixed(2)), 1000, 2);
-    animateCounter('avgDance', 0, parseFloat(data.summary.avg_danceability.toFixed(2)), 1000, 2);
-    animateCounter('avgTempo', 0, Math.round(data.summary.avg_tempo), 1000);
-    animateCounter('avgPopularity', 0, Math.round(data.summary.avg_popularity), 1000);
-    
-    // Most common mood
-    const moodCounts = {};
-    if (state.songs.length > 0) {
-        state.songs.forEach(song => {
-            moodCounts[song.mood || 'Unknown'] = (moodCounts[song.mood || 'Unknown'] || 0) + 1;
-        });
-        const commonMood = Object.keys(moodCounts).reduce((a, b) => 
-            moodCounts[a] > moodCounts[b] ? a : b
-        );
-        const elem = document.getElementById('commonMood');
-        if (elem) {
-            elem.textContent = commonMood;
-            console.log(`✓ Updated commonMood: ${commonMood}`);
-        }
+function animateNumber(id, target, decimals) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const start = 0;
+    const duration = 900;
+    const t0 = performance.now();
+    function step(now) {
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = start + (target - start) * eased;
+        el.textContent = decimals === 0 ? Math.round(v).toLocaleString() : v.toFixed(decimals);
+        if (p < 1) requestAnimationFrame(step);
     }
-    
-    // Avg match %
-    if (state.currentRecommendations && state.currentRecommendations.length > 0) {
-        const avgMatch = Math.round(
-            state.currentRecommendations.reduce((sum, r) => sum + r.similarity_score * 100, 0) / 
-            state.currentRecommendations.length
-        );
-        const elem = document.getElementById('avgMatch');
-        if (elem) {
-            elem.textContent = avgMatch + '%';
-            console.log(`✓ Updated avgMatch: ${avgMatch}%`);
-        }
-    }
-    
-    // Dominant tempo
-    const tempoRanges = data.distributions.tempo;
-    const dominant = Object.keys(tempoRanges).reduce((a, b) => 
-        tempoRanges[a] > tempoRanges[b] ? a : b
-    );
-    const tempoLabels = {
-        slow: 'Slow (<90)',
-        moderate: 'Moderate (90-130)',
-        fast: 'Fast (>130)'
-    };
-    const tempoElem = document.getElementById('dominantTempo');
-    if (tempoElem) {
-        tempoElem.textContent = tempoLabels[dominant] || 'Moderate';
-        console.log(`✓ Updated dominantTempo: ${tempoLabels[dominant]}`);
-    }
-    
-    // Charts
-    displayChart('tempoChart', [
-        { label: 'Slow (<90)', value: data.distributions.tempo.slow },
-        { label: 'Moderate', value: data.distributions.tempo.moderate },
-        { label: 'Fast (>130)', value: data.distributions.tempo.fast }
-    ]);
-    
-    displayChart('energyChart', [
-        { label: 'Low (<0.4)', value: data.distributions.energy.low },
-        { label: 'Medium', value: data.distributions.energy.medium },
-        { label: 'High (>0.7)', value: data.distributions.energy.high }
-    ]);
-    
-    console.log('✓ Analytics displayed');
+    requestAnimationFrame(step);
 }
 
-function animateCounter(id, start, end, duration, decimals = 0) {
-    const element = document.getElementById(id);
-    if (!element) {
-        console.error(`❌ Element ${id} not found`);
-        return;
-    }
-    
-    const increment = (end - start) / (duration / 16);
-    let current = start;
-    
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= end) {
-            current = end;
-            clearInterval(timer);
-        }
-        
-        if (decimals > 0) {
-            element.textContent = current.toFixed(decimals);
-        } else {
-            element.textContent = Math.round(current);
-        }
-    }, 16);
+function fillBar(el, pct) {
+    if (!el) return;
+    requestAnimationFrame(() => { el.style.width = Math.max(0, Math.min(100, pct)) + '%'; });
 }
 
-function displayChart(id, data) {
-    const container = document.getElementById(id);
-    if (!container) {
-        console.error(`❌ Chart container ${id} not found`);
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    const maxValue = Math.max(...data.map(d => d.value));
-    
-    data.forEach(item => {
-        const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        bar.style.height = percentage + '%';
-        
-        bar.innerHTML = `
-            <div class="bar-value">${item.value}</div>
-            <div class="bar-label">${item.label}</div>
-        `;
-        
-        container.appendChild(bar);
+function renderBarChart(id, data, labels) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+    Object.entries(data).forEach(([key, value], i) => {
+        const pct = (value / total) * 100;
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+            <div class="bar-row-label">${labels[key] || key}</div>
+            <div class="bar-track"><div class="bar-fill" data-fill="${pct}"></div></div>
+            <div class="bar-row-value">${value}</div>`;
+        el.appendChild(row);
+        setTimeout(() => {
+            row.querySelector('.bar-fill').style.width = pct + '%';
+        }, 100 + i * 80);
     });
-    
-    console.log(`✓ Chart ${id} displayed`);
 }
 
 /* ============================================================================
-   UTILITIES
+   BATTLE
    ============================================================================ */
+function populateBattleSelects() {
+    const a = document.getElementById('song1');
+    const b = document.getElementById('song2');
+    if (!a || !b) return;
+    // deduplicate by id
+    const seen = new Set();
+    const uniq = state.songs.filter(s => seen.has(s.id) ? false : seen.add(s.id));
+    uniq.sort((x, y) => x.title.localeCompare(y.title));
 
-/* ============================================================================
-   UTILITIES & INLINE MESSAGES
-   ============================================================================ */
+    const opts = uniq.map(s => `<option value="${s.id}">${escapeHtml(s.title)} — ${escapeHtml(s.artist)}</option>`).join('');
+    a.innerHTML = `<option value="">Select song…</option>${opts}`;
+    b.innerHTML = `<option value="">Select song…</option>${opts}`;
+}
 
-/**
- * Display inline message in recommendations area
- * Replaces alert() with styled UI messages
- */
-function showInlineMessage(message, type = 'info') {
-    console.log(`💬 showInlineMessage: ${type} - ${message}`);
-    
-    const section = document.getElementById('recommendationsSection');
-    if (!section) {
-        console.warn('⚠️ recommendationsSection not found for message');
-        return;
-    }
-    
-    const container = document.getElementById('recommendationsGrid');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    // Create message element
-    const messageEl = document.createElement('div');
-    messageEl.className = `inline-message inline-message-${type}`;
-    
-    let icon = 'ℹ️';
-    if (type === 'warning') icon = '⚠️';
-    if (type === 'error') icon = '❌';
-    if (type === 'success') icon = '✓';
-    
-    messageEl.innerHTML = `
-        <div class="inline-message-content">
-            <span class="inline-message-icon">${icon}</span>
-            <span class="inline-message-text">${escapeHtml(message)}</span>
+async function handleBattle() {
+    const id1 = parseInt(document.getElementById('song1').value, 10);
+    const id2 = parseInt(document.getElementById('song2').value, 10);
+    if (!id1 || !id2) { toast('Pick two tracks to battle'); return; }
+    if (id1 === id2) { toast('Pick two different tracks'); return; }
+
+    const result = await api('/api/battle', 'POST', { song1_id: id1, song2_id: id2 });
+    if (!result) { toast('Battle failed — try again'); return; }
+    renderBattle(result);
+}
+
+function renderBattle(r) {
+    const wrap = document.getElementById('battleResults');
+    if (!wrap) return;
+    const s1 = r.song1 || {};
+    const s2 = r.song2 || {};
+    const winner = r.winner || {};
+    const winnerIs1 = winner.id === s1.id;
+
+    wrap.innerHTML = `
+        <div class="battle-winner">
+            <div class="battle-winner-label">Winner</div>
+            <div class="battle-winner-name">${escapeHtml(winner.title || '—')} ${winner.artist ? '· ' + escapeHtml(winner.artist) : ''}</div>
         </div>
-    `;
-    
-    container.appendChild(messageEl);
-    
-    if (!section.classList.contains('hidden')) {
-        // Section already visible, no scroll needed
-    } else {
-        section.classList.remove('hidden');
-    }
+        <div class="battle-comparison">
+            ${battleSide(s1, winnerIs1)}
+            ${battleSide(s2, !winnerIs1)}
+        </div>`;
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-/**
- * Display message when no recommendations match selected mood
- */
-function displayNoRecommendationsMessage(mood) {
-    console.log(`💬 No recommendations for mood: ${mood}`);
-    
-    const section = document.getElementById('recommendationsSection');
-    const container = document.getElementById('recommendationsGrid');
-    
-    if (!section || !container) {
-        console.error('❌ recommendationsSection or grid not found');
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    const messageEl = document.createElement('div');
-    messageEl.className = 'inline-message inline-message-info';
-    
-    messageEl.innerHTML = `
-        <div class="inline-message-content">
-            <span class="inline-message-icon">🎭</span>
-            <div class="inline-message-body">
-                <span class="inline-message-text">
-                    No matching songs found for <strong>${escapeHtml(mood)}</strong> yet.
-                </span>
-                <span class="inline-message-subtext">
-                    Try another mood or search for a different song.
-                </span>
+function battleSide(s, isWinner) {
+    return `
+        <div class="battle-side ${isWinner ? 'winner' : ''}">
+            <div class="battle-side-title">${escapeHtml(s.title || '—')}<br><span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">${escapeHtml(s.artist || '')}</span></div>
+            <div class="battle-side-features">
+                <div class="battle-feature-row"><span>Energy</span><span>${(s.energy ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Dance</span><span>${(s.danceability ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Tempo</span><span>${s.tempo ?? 0} BPM</span></div>
+                <div class="battle-feature-row"><span>Popularity</span><span>${s.popularity ?? 0}</span></div>
             </div>
-        </div>
-    `;
-    
-    container.appendChild(messageEl);
-    section.classList.remove('hidden');
-    
-    console.log('✓ No recommendations message displayed');
+        </div>`;
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+/* ============================================================================
+   UTIL
+   ============================================================================ */
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-console.log('✓ Audio Intelligence Platform script loaded');
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+}
