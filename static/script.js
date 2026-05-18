@@ -1,985 +1,757 @@
 /* ============================================================================
-   AUDIO INTELLIGENCE PLATFORM - FINAL POLISH VERSION
-   Enhanced design with better organization and interactivity
+   AUDIO INTELLIGENCE PLATFORM - ENHANCED JAVASCRIPT
+   3D Background, Mood Filtering, Interactive Features
    ============================================================================ */
 
-/* CSS VARIABLES & THEMING */
-:root {
-    --primary: #0f0f1e;
-    --primary-light: #1a1a2e;
-    --accent-cyan: #00d9ff;
-    --accent-purple: #a366ff;
-    --accent-green: #00ff88;
-    --accent-pink: #ff006e;
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.8);
-    --text-tertiary: rgba(255, 255, 255, 0.6);
-    --border-color: rgba(0, 217, 255, 0.2);
-    --shadow-sm: 0 2px 8px rgba(0, 217, 255, 0.1);
-    --shadow-md: 0 8px 24px rgba(0, 217, 255, 0.15);
-    --shadow-lg: 0 12px 40px rgba(163, 102, 255, 0.2);
-    --glow: 0 0 30px rgba(0, 217, 255, 0.3);
-    --radius: 12px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+// STATE MANAGEMENT
+const state = {
+    songs: [],
+    selectedSong: null,
+    selectedMood: null,
+    currentRecommendations: [],
+    analytics: null
+};
 
-/* GLOBAL STYLES */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+// INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎵 Audio Intelligence Platform initializing...');
+    
+    // Initialize 3D background
+    init3D();
+    
+    // Setup event listeners
+    setupListeners();
+    
+    // Load initial data
+    loadInitialData();
+});
 
-html {
-    scroll-behavior: smooth;
-    font-size: 16px;
-}
+/* ============================================================================
+   3D BACKGROUND WITH THREE.JS
+   ============================================================================ */
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, var(--primary) 0%, #1a1a3e 100%);
-    color: var(--text-primary);
-    line-height: 1.6;
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
-}
+let scene, camera, renderer, particles;
 
-/* 3D CANVAS */
-#canvas-3d {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -2;
-    opacity: 0.8;
-}
+function init3D() {
+    console.log('🎨 Initializing 3D background...');
+    
+    try {
+        const canvas = document.getElementById('canvas-3d');
+        if (!canvas) return;
 
-.bg-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(180deg, rgba(15, 15, 30, 0.7) 0%, rgba(26, 26, 46, 0.95) 100%);
-    pointer-events: none;
-    z-index: -1;
-}
+        // Scene setup
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        camera.position.z = 50;
+        
+        renderer = new THREE.WebGLRenderer({ 
+            canvas: canvas,
+            antialias: true, 
+            alpha: true,
+            powerPreference: 'high-performance'
+        });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
 
-/* LAYOUT */
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 2rem;
-}
+        // Create particles
+        const particleCount = 100;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
 
-main {
-    position: relative;
-    z-index: 1;
-    padding: 4rem 0;
-}
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 200;
+            positions[i + 1] = (Math.random() - 0.5) * 200;
+            positions[i + 2] = (Math.random() - 0.5) * 200;
 
-.hidden {
-    display: none !important;
-}
+            colors[i] = 0;
+            colors[i + 1] = 0.85;
+            colors[i + 2] = 1;
+        }
 
-/* HEADER */
-.header {
-    background: rgba(26, 26, 46, 0.8);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
-    padding: 2rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow-md);
-}
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-.logo {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-    animation: glow-pulse 3s ease-in-out infinite;
-}
+        const material = new THREE.PointsMaterial({
+            size: 0.8,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.6,
+            vertexColors: true
+        });
 
-.logo-subtitle {
-    color: var(--text-tertiary);
-    font-size: 0.95rem;
-    margin: 0;
-}
+        particles = new THREE.Points(geometry, material);
+        scene.add(particles);
 
-@keyframes glow-pulse {
-    0%, 100% { text-shadow: 0 0 20px rgba(0, 217, 255, 0.3); }
-    50% { text-shadow: 0 0 40px rgba(0, 217, 255, 0.6); }
-}
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
 
-/* HERO SECTION */
-.hero-section {
-    text-align: center;
-    margin-bottom: 4rem;
-    padding: 3rem 0;
-    animation: slideDown 0.8s ease-out;
-}
+            particles.rotation.x += 0.0001;
+            particles.rotation.y += 0.0002;
 
-.hero-title {
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
-}
+            // Slight floating motion
+            const positions = geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] += (Math.random() - 0.5) * 0.2;
+                positions[i + 1] += (Math.random() - 0.5) * 0.2;
+                positions[i + 2] += (Math.random() - 0.5) * 0.2;
 
-.hero-subtitle {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
-}
+                // Keep in bounds
+                if (positions[i] > 100) positions[i] = -100;
+                if (positions[i] < -100) positions[i] = 100;
+                if (positions[i + 1] > 100) positions[i + 1] = -100;
+                if (positions[i + 1] < -100) positions[i + 1] = 100;
+            }
 
-.search-bar-wrapper {
-    display: flex;
-    gap: 1rem;
-    max-width: 600px;
-    margin: 0 auto 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
-}
+            geometry.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
 
-.search-input {
-    flex: 1;
-    min-width: 250px;
-    padding: 1rem 1.5rem;
-    background: rgba(26, 26, 46, 0.6);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-size: 1rem;
-    backdrop-filter: blur(10px);
-    transition: var(--transition);
-}
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
 
-.search-input:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow), inset 0 0 20px rgba(0, 217, 255, 0.1);
-}
+        // Mouse interaction
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = -(e.clientY / window.innerHeight) * 2 + 1;
+            camera.position.x = x * 10;
+            camera.position.y = y * 10;
+        });
 
-.search-hint {
-    color: var(--text-tertiary);
-    font-size: 0.9rem;
-    text-align: center;
-}
+        animate();
+        console.log('✓ 3D background initialized');
 
-/* BUTTONS */
-.btn {
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: var(--radius);
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.5s, height 0.5s;
-}
-
-.btn:hover::before {
-    width: 300px;
-    height: 300px;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-    color: var(--primary);
-    font-weight: 700;
-    box-shadow: var(--glow);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 50px rgba(0, 217, 255, 0.5);
-}
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    border: 2px solid var(--border-color);
-    backdrop-filter: blur(10px);
-}
-
-.btn-secondary:hover {
-    background: rgba(0, 217, 255, 0.2);
-    border-color: var(--accent-cyan);
-}
-
-.btn-small {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-}
-
-/* SECTIONS */
-.section {
-    background: rgba(26, 26, 46, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 2.5rem;
-    margin-bottom: 3rem;
-    animation: slideUp 0.6s ease-out;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.section-title {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0;
-}
-
-.section-subtitle {
-    color: var(--text-tertiary);
-    font-size: 0.95rem;
-    margin-bottom: 2rem;
-}
-
-/* ANIMATIONS */
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    } catch (error) {
+        console.warn('3D initialization failed:', error.message);
     }
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-@keyframes cardGlow {
-    0%, 100% { box-shadow: var(--shadow-md); }
-    50% { box-shadow: 0 0 30px rgba(0, 217, 255, 0.3), var(--shadow-md); }
-}
-
-/* SEARCH RESULTS */
-.results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.result-card {
-    background: rgba(45, 90, 140, 0.2);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.result-card:hover {
-    border-color: var(--accent-cyan);
-    background: rgba(0, 217, 255, 0.1);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-}
-
-.result-card h4 {
-    font-size: 1.1rem;
-    margin-bottom: 0.3rem;
-    color: var(--text-primary);
-}
-
-.result-card p {
-    color: var(--text-tertiary);
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.metrics-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
-}
-
-.metric {
-    font-size: 0.85rem;
-}
-
-.metric-label {
-    color: var(--text-tertiary);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-}
-
-.metric-value {
-    color: var(--accent-cyan);
-    font-weight: 700;
-    font-size: 1.2rem;
-    margin-top: 0.3rem;
-}
-
-/* SELECTED SONG */
-.selected-song-card {
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(163, 102, 255, 0.1));
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 2rem;
-    animation: fadeIn 0.6s ease-out;
-}
-
-.song-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.song-artist {
-    color: var(--text-tertiary);
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-}
-
-.info-item {
-    background: rgba(0, 217, 255, 0.1);
-    border-left: 3px solid var(--accent-cyan);
-    padding: 1rem;
-    border-radius: 8px;
-}
-
-.info-item-label {
-    font-size: 0.8rem;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-}
-
-.info-item-value {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-}
-
-/* MOOD GRID */
-.mood-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.mood-card {
-    background: rgba(45, 90, 140, 0.2);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.mood-card:hover {
-    border-color: var(--accent-cyan);
-    background: rgba(0, 217, 255, 0.15);
-    transform: translateY(-4px);
-}
-
-.mood-card.active {
-    border-color: var(--accent-green);
-    background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 217, 255, 0.1));
-    box-shadow: var(--glow);
-}
-
-.mood-emoji {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.mood-name {
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
-.mood-count {
-    font-size: 0.8rem;
-    color: var(--text-tertiary);
-}
-
-.mood-summary {
-    background: rgba(163, 102, 255, 0.1);
-    border-left: 3px solid var(--accent-purple);
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    animation: slideUp 0.4s ease-out;
-}
-
-/* RECOMMENDATIONS */
-.recommendations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-}
-
-.rec-card {
-    background: linear-gradient(135deg, rgba(45, 90, 140, 0.3), rgba(163, 102, 255, 0.1));
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-    animation: slideUp 0.5s ease-out backwards;
-}
-
-.rec-card:nth-child(1) { animation-delay: 0.1s; }
-.rec-card:nth-child(2) { animation-delay: 0.2s; }
-.rec-card:nth-child(3) { animation-delay: 0.3s; }
-.rec-card:nth-child(4) { animation-delay: 0.4s; }
-.rec-card:nth-child(5) { animation-delay: 0.5s; }
-
-.rec-card:hover {
-    border-color: var(--accent-cyan);
-    background: linear-gradient(135deg, rgba(45, 90, 140, 0.5), rgba(163, 102, 255, 0.2));
-    transform: translateY(-4px) perspective(1000px) rotateX(2deg);
-    box-shadow: var(--shadow-lg);
-}
-
-.rec-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.3rem;
-}
-
-.rec-artist {
-    color: var(--text-tertiary);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-
-.rec-score {
-    display: inline-block;
-    background: var(--gradient);
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-    color: var(--primary);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    box-shadow: var(--glow);
-}
-
-.rec-reason {
-    background: rgba(0, 217, 255, 0.1);
-    border-left: 3px solid var(--accent-cyan);
-    padding: 0.8rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.rec-features {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
-}
-
-.rec-feature {
-    background: rgba(0, 217, 255, 0.05);
-    padding: 0.8rem;
-    border-radius: 6px;
-    border-left: 2px solid var(--accent-cyan);
-}
-
-.feature-label {
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-}
-
-.feature-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    margin-top: 0.3rem;
-}
-
-.rec-mood {
-    display: inline-block;
-    background: var(--accent-green);
-    color: var(--primary);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-/* INSIGHTS */
-.insights-list {
-    display: grid;
-    gap: 1rem;
-}
-
-.insight-item {
-    background: rgba(163, 102, 255, 0.1);
-    border-left: 3px solid var(--accent-purple);
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    animation: slideUp 0.4s ease-out backwards;
-}
-
-.insight-item:nth-child(1) { animation-delay: 0.1s; }
-.insight-item:nth-child(2) { animation-delay: 0.2s; }
-.insight-item:nth-child(3) { animation-delay: 0.3s; }
-
-/* ANALYTICS DASHBOARD */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(163, 102, 255, 0.1));
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    text-align: center;
-    transition: var(--transition);
-    animation: slideUp 0.5s ease-out backwards;
-}
-
-.stat-card:nth-child(1) { animation-delay: 0.1s; }
-.stat-card:nth-child(2) { animation-delay: 0.15s; }
-.stat-card:nth-child(3) { animation-delay: 0.2s; }
-.stat-card:nth-child(4) { animation-delay: 0.25s; }
-.stat-card:nth-child(5) { animation-delay: 0.3s; }
-.stat-card:nth-child(6) { animation-delay: 0.35s; }
-.stat-card:nth-child(7) { animation-delay: 0.4s; }
-.stat-card:nth-child(8) { animation-delay: 0.45s; }
-
-.stat-card:hover {
-    border-color: var(--accent-cyan);
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(163, 102, 255, 0.15));
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-}
-
-.stat-label {
-    color: var(--text-tertiary);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    font-variant-numeric: tabular-nums;
-}
-
-/* CHARTS */
-.charts-section {
-    background: rgba(0, 217, 255, 0.05);
-    border: 1px solid var(--border-color);
-    padding: 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-}
-
-.chart-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    color: var(--accent-cyan);
-}
-
-.chart-bar {
-    display: flex;
-    gap: 1.5rem;
-    align-items: flex-end;
-    height: 150px;
-    justify-content: space-around;
-}
-
-.bar {
-    flex: 1;
-    background: linear-gradient(180deg, var(--accent-cyan), var(--accent-green));
-    border-radius: 8px 8px 0 0;
-    position: relative;
-    transition: var(--transition);
-    min-height: 20px;
-}
-
-.bar:hover {
-    filter: brightness(1.2);
-    box-shadow: var(--glow);
-}
-
-.bar-label {
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.8rem;
-    color: var(--text-tertiary);
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.bar-value {
-    position: absolute;
-    top: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-/* SONG BATTLE */
-.battle-inputs {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    align-items: flex-end;
-}
-
-.battle-input-group {
-    flex: 1;
-    min-width: 200px;
-}
-
-.battle-input-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.select-input {
-    width: 100%;
-    padding: 0.8rem;
-    background: rgba(26, 26, 46, 0.6);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-family: inherit;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.select-input:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow);
-}
-
-.battle-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.battle-card {
-    background: rgba(45, 90, 140, 0.2);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 2rem;
-    text-align: center;
-    transition: var(--transition);
-}
-
-.battle-card.winner {
-    border-color: var(--accent-green);
-    background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 217, 255, 0.1));
-    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-}
-
-.winner-badge {
-    display: inline-block;
-    background: var(--accent-green);
-    color: var(--primary);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.battle-title {
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 0.3rem;
-}
-
-.battle-artist {
-    color: var(--text-tertiary);
-    margin-bottom: 1.5rem;
-}
-
-.battle-score {
-    font-size: 3rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    margin: 1rem 0;
-}
-
-.battle-metrics {
-    display: grid;
-    gap: 0.8rem;
-}
-
-.battle-metric {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.8rem;
-    background: rgba(0, 217, 255, 0.1);
-    border-radius: 6px;
-    border-left: 2px solid var(--accent-cyan);
-}
-
-.metric-name {
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.metric-val {
-    color: var(--accent-cyan);
-    font-weight: 700;
-}
-
-/* MOODS SHOWCASE */
-.moods-showcase-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
-}
-
-.mood-showcase-card {
-    background: rgba(45, 90, 140, 0.2);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 2rem;
-    text-align: center;
-    transition: var(--transition);
-}
-
-.mood-showcase-card:hover {
-    border-color: var(--accent-cyan);
-    background: rgba(0, 217, 255, 0.15);
-    transform: translateY(-4px);
-}
-
-.mood-large-emoji {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.mood-showcase-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-/* ABOUT SECTION */
-.about-section {
-    background: rgba(26, 26, 46, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 2.5rem;
-    margin-bottom: 2rem;
-}
-
-.about-content {
-    max-width: 900px;
-    color: var(--text-secondary);
-    line-height: 1.8;
-}
-
-.about-content p {
-    margin-bottom: 1.5rem;
-}
-
-.about-content strong {
-    color: var(--accent-cyan);
-}
-
-/* FOOTER */
-.footer {
-    background: rgba(26, 26, 46, 0.9);
-    border-top: 1px solid var(--border-color);
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-tertiary);
-    font-size: 0.9rem;
-}
-
-/* LOADING INDICATOR */
-.loading-indicator {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-}
-
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--accent-cyan);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .hero-title {
-        font-size: 2rem;
+/* ============================================================================
+   EVENT LISTENERS
+   ============================================================================ */
+
+function setupListeners() {
+    console.log('📌 Setting up event listeners...');
+    
+    // Search
+    document.getElementById('searchBtn').addEventListener('click', handleSearch);
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearch();
+    });
+
+    // Battle
+    document.getElementById('battleBtn').addEventListener('click', handleBattle);
+
+    // Clear mood filter
+    const clearBtn = document.getElementById('clearMoodBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearMoodFilter);
     }
 
-    .section {
-        padding: 1.5rem;
-    }
+    console.log('✓ Event listeners ready');
+}
 
-    .dashboard-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 1rem;
-    }
+/* ============================================================================
+   INITIAL DATA LOADING
+   ============================================================================ */
 
-    .stat-value {
-        font-size: 1.5rem;
-    }
+async function loadInitialData() {
+    console.log('📊 Loading initial data...');
+    
+    // Load moods (gets all songs)
+    await loadMoods();
+    
+    // Load analytics
+    await loadAnalytics();
+}
 
-    .mood-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    }
+/* ============================================================================
+   API HELPER
+   ============================================================================ */
 
-    .recommendations-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .battle-results {
-        grid-template-columns: 1fr;
-    }
-
-    .search-bar-wrapper {
-        flex-direction: column;
-    }
-
-    .search-input {
-        min-width: auto;
+async function callAPI(endpoint, method = 'GET', data = null) {
+    try {
+        showLoading(true);
+        
+        const options = {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        
+        if (data) options.body = JSON.stringify(data);
+        
+        const response = await fetch(endpoint, options);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const result = await response.json();
+        return result;
+        
+    } catch (error) {
+        console.error('API Error:', error);
+        return null;
+    } finally {
+        showLoading(false);
     }
 }
 
-@media (max-width: 480px) {
-    .container {
-        padding: 0 1rem;
-    }
-
-    .hero-title {
-        font-size: 1.5rem;
-    }
-
-    .logo {
-        font-size: 1.5rem;
-    }
-
-    .section {
-        padding: 1rem;
-    }
-
-    .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.8rem;
-    }
-
-    .stat-label {
-        font-size: 0.75rem;
-    }
-
-    .stat-value {
-        font-size: 1.3rem;
-    }
-
-    .mood-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.8rem;
-    }
-
-    .mood-emoji {
-        font-size: 1.5rem;
-    }
-
-    .mood-name {
-        font-size: 0.85rem;
-    }
-
-    .mood-count {
-        font-size: 0.7rem;
+function showLoading(show) {
+    const loader = document.getElementById('loadingIndicator');
+    if (loader) {
+        if (show) {
+            loader.classList.remove('hidden');
+        } else {
+            loader.classList.add('hidden');
+        }
     }
 }
+
+/* ============================================================================
+   SEARCH FUNCTIONALITY
+   ============================================================================ */
+
+async function handleSearch() {
+    const input = document.getElementById('searchInput');
+    const query = input.value.trim();
+    
+    if (!query || query.length < 2) {
+        alert('Please enter at least 2 characters');
+        return;
+    }
+
+    console.log(`🔍 Searching: "${query}"`);
+    
+    const result = await callAPI('/api/search', 'POST', { query });
+    if (!result || !result.results) {
+        alert('Search failed');
+        return;
+    }
+
+    displaySearchResults(result.results);
+}
+
+function displaySearchResults(results) {
+    const container = document.getElementById('resultsList');
+    const section = document.getElementById('searchResults');
+    
+    container.innerHTML = '';
+    
+    if (results.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.6);">No songs found</p>';
+        section.classList.remove('hidden');
+        return;
+    }
+
+    results.forEach((song, idx) => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.style.animationDelay = `${idx * 50}ms`;
+        
+        card.innerHTML = `
+            <h4>${escapeHtml(song.title)}</h4>
+            <p>${escapeHtml(song.artist)}</p>
+            <div class="metrics-row">
+                <div class="metric">
+                    <div class="metric-label">Energy</div>
+                    <div class="metric-value">${song.energy.toFixed(2)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Dance</div>
+                    <div class="metric-value">${song.danceability.toFixed(2)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Tempo</div>
+                    <div class="metric-value">${song.tempo}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Pop</div>
+                    <div class="metric-value">${song.popularity}</div>
+                </div>
+            </div>
+        `;
+        
+        card.addEventListener('click', () => selectSong(song));
+        container.appendChild(card);
+    });
+
+    section.classList.remove('hidden');
+}
+
+/* ============================================================================
+   SONG SELECTION & RECOMMENDATIONS
+   ============================================================================ */
+
+async function selectSong(song) {
+    console.log(`✓ Selected: ${song.title}`);
+    
+    state.selectedSong = song;
+    state.selectedMood = null;
+    
+    // Clear mood filter
+    document.querySelectorAll('.mood-card').forEach(m => m.classList.remove('active'));
+    document.getElementById('clearMoodBtn')?.classList.add('hidden');
+    document.querySelector('.mood-summary')?.classList.add('hidden');
+    
+    // Display selected song
+    const card = document.getElementById('selectedSongCard');
+    card.innerHTML = `
+        <h3 class="song-title">${escapeHtml(song.title)}</h3>
+        <p class="song-artist">${escapeHtml(song.artist)}</p>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-item-label">Energy</div>
+                <div class="info-item-value">${song.energy.toFixed(2)}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-label">Danceability</div>
+                <div class="info-item-value">${song.danceability.toFixed(2)}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-label">Tempo</div>
+                <div class="info-item-value">${song.tempo} BPM</div>
+            </div>
+            <div class="info-item">
+                <div class="info-item-label">Popularity</div>
+                <div class="info-item-value">${song.popularity}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('selectedSongSection').classList.remove('hidden');
+
+    // Show mood section
+    document.getElementById('moodSection').classList.remove('hidden');
+
+    // Get recommendations
+    await getRecommendations(song.id);
+    
+    // Get insights
+    await getInsights(song.id);
+
+    // Populate battle dropdowns
+    populateBattle();
+}
+
+async function getRecommendations(songId) {
+    const result = await callAPI('/api/recommend', 'POST', {
+        song_id: songId,
+        count: 5
+    });
+    
+    if (!result || !result.recommendations) return;
+    
+    state.currentRecommendations = result.recommendations;
+    displayRecommendations(result.recommendations);
+}
+
+function displayRecommendations(recs) {
+    const container = document.getElementById('recommendationsGrid');
+    const section = document.getElementById('recommendationsSection');
+    const subtitle = document.getElementById('recSubtitle');
+    
+    container.innerHTML = '';
+    
+    if (state.selectedMood) {
+        subtitle.textContent = `Based on "${state.selectedMood}" mood`;
+    } else {
+        subtitle.textContent = 'Based on audio feature similarity';
+    }
+
+    recs.forEach((rec, idx) => {
+        const confidence = Math.round(rec.similarity_score * 100);
+        const reason = getRecommendationReason(confidence);
+        
+        const card = document.createElement('div');
+        card.className = 'rec-card';
+        card.style.animationDelay = `${idx * 50}ms`;
+        
+        card.innerHTML = `
+            <h4 class="rec-title">${escapeHtml(rec.title)}</h4>
+            <p class="rec-artist">${escapeHtml(rec.artist)}</p>
+            <div class="rec-score">${confidence}% Match</div>
+            <div class="rec-reason">💡 ${reason}</div>
+            <div class="rec-features">
+                <div class="rec-feature">
+                    <div class="feature-label">⚡ Energy</div>
+                    <div class="feature-value">${rec.energy.toFixed(2)}</div>
+                </div>
+                <div class="rec-feature">
+                    <div class="feature-label">💃 Dance</div>
+                    <div class="feature-value">${rec.danceability.toFixed(2)}</div>
+                </div>
+                <div class="rec-feature">
+                    <div class="feature-label">🎼 Tempo</div>
+                    <div class="feature-value">${rec.tempo}</div>
+                </div>
+                <div class="rec-feature">
+                    <div class="feature-label">⭐ Pop</div>
+                    <div class="feature-value">${rec.popularity}</div>
+                </div>
+            </div>
+            <span class="rec-mood">${escapeHtml(rec.mood)}</span>
+        `;
+        
+        container.appendChild(card);
+    });
+
+    section.classList.remove('hidden');
+    
+    // Smooth scroll
+    setTimeout(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+}
+
+function getRecommendationReason(confidence) {
+    if (confidence >= 95) return 'Perfect match! Very similar to your selection.';
+    if (confidence >= 85) return 'High similarity in energy and danceability.';
+    if (confidence >= 75) return 'Good match with similar audio characteristics.';
+    if (confidence >= 65) return 'Similar in overall vibe and mood.';
+    return 'Recommended based on audio similarity.';
+}
+
+async function getInsights(songId) {
+    const result = await callAPI('/api/insights', 'POST', { song_id: songId });
+    if (!result || !result.insights) return;
+    
+    const container = document.getElementById('insightsList');
+    container.innerHTML = '';
+    
+    result.insights.forEach((insight, idx) => {
+        const item = document.createElement('div');
+        item.className = 'insight-item';
+        item.style.animationDelay = `${idx * 100}ms`;
+        item.textContent = insight;
+        container.appendChild(item);
+    });
+    
+    document.getElementById('insightsSection').classList.remove('hidden');
+}
+
+/* ============================================================================
+   MOOD FILTERING
+   ============================================================================ */
+
+async function loadMoods() {
+    const result = await callAPI('/api/moods', 'GET');
+    if (!result || !result.moods) return;
+    
+    // Extract all songs
+    state.songs = [];
+    Object.values(result.moods).forEach(songs => {
+        state.songs.push(...songs);
+    });
+
+    // Display mood cards
+    const container = document.getElementById('moodGrid');
+    container.innerHTML = '';
+    
+    const moodEmojis = {
+        'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
+        'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
+        'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '😢',
+        'Focus Mode': '🎯'
+    };
+    
+    Object.entries(result.moods).forEach(([mood, songs], idx) => {
+        const card = document.createElement('div');
+        card.className = 'mood-card';
+        card.style.animationDelay = `${idx * 50}ms`;
+        
+        const emoji = moodEmojis[mood] || '🎵';
+        card.innerHTML = `
+            <div class="mood-emoji">${emoji}</div>
+            <div class="mood-name">${escapeHtml(mood)}</div>
+            <div class="mood-count">${songs.length} songs</div>
+        `;
+        
+        card.addEventListener('click', () => filterByMood(mood, result.moods));
+        container.appendChild(card);
+    });
+
+    // Display moods showcase
+    const showcase = document.getElementById('moodsShowcaseGrid');
+    showcase.innerHTML = '';
+    
+    Object.entries(result.moods).forEach(([mood, songs]) => {
+        const card = document.createElement('div');
+        card.className = 'mood-showcase-card';
+        
+        const emoji = moodEmojis[mood] || '🎵';
+        card.innerHTML = `
+            <div class="mood-large-emoji">${emoji}</div>
+            <h4 class="mood-showcase-name">${escapeHtml(mood)}</h4>
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">${songs.length} songs in collection</p>
+        `;
+        
+        showcase.appendChild(card);
+    });
+
+    document.getElementById('moodsShowcaseSection').classList.remove('hidden');
+}
+
+function filterByMood(mood, allMoods) {
+    console.log(`🎭 Filtering by: ${mood}`);
+    
+    state.selectedMood = mood;
+    
+    // Update UI
+    document.querySelectorAll('.mood-card').forEach(card => {
+        if (card.querySelector('.mood-name').textContent.trim() === mood) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+    });
+    
+    document.getElementById('clearMoodBtn').classList.remove('hidden');
+    
+    // Filter recommendations
+    const filtered = state.currentRecommendations.filter(rec => rec.mood === mood);
+    
+    if (filtered.length === 0) {
+        alert(`No recommendations found for "${mood}" mood`);
+        return;
+    }
+    
+    // Update summary
+    const summary = document.querySelector('.mood-summary');
+    if (summary) {
+        summary.innerHTML = `Filtering recommendations by <strong>${mood}</strong> mood (${filtered.length} songs)`;
+        summary.classList.remove('hidden');
+    }
+    
+    displayRecommendations(filtered);
+}
+
+function clearMoodFilter() {
+    console.log('🔄 Clearing mood filter');
+    
+    state.selectedMood = null;
+    
+    document.querySelectorAll('.mood-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    document.getElementById('clearMoodBtn').classList.add('hidden');
+    document.querySelector('.mood-summary')?.classList.add('hidden');
+    
+    if (state.currentRecommendations.length > 0) {
+        displayRecommendations(state.currentRecommendations);
+    }
+}
+
+/* ============================================================================
+   SONG BATTLE
+   ============================================================================ */
+
+function populateBattle() {
+    const s1 = document.getElementById('song1');
+    const s2 = document.getElementById('song2');
+    
+    s1.innerHTML = '<option value="">Select song...</option>';
+    s2.innerHTML = '<option value="">Select song...</option>';
+    
+    state.songs.forEach(song => {
+        const o1 = document.createElement('option');
+        o1.value = song.id;
+        o1.textContent = `${song.title} - ${song.artist}`;
+        s1.appendChild(o1);
+        
+        const o2 = document.createElement('option');
+        o2.value = song.id;
+        o2.textContent = `${song.title} - ${song.artist}`;
+        s2.appendChild(o2);
+    });
+    
+    document.getElementById('battleSection').classList.remove('hidden');
+}
+
+async function handleBattle() {
+    const id1 = parseInt(document.getElementById('song1').value);
+    const id2 = parseInt(document.getElementById('song2').value);
+    
+    if (!id1 || !id2 || id1 === id2) {
+        alert('Select two different songs');
+        return;
+    }
+
+    const result = await callAPI('/api/battle', 'POST', {
+        song1_id: id1,
+        song2_id: id2
+    });
+    
+    if (!result) return;
+    
+    const container = document.getElementById('battleResults');
+    container.innerHTML = '';
+    
+    const displayBattleCard = (song, isWinner) => {
+        const card = document.createElement('div');
+        card.className = `battle-card ${isWinner ? 'winner' : ''}`;
+        
+        card.innerHTML = `
+            ${isWinner ? '<div class="winner-badge">🏆 WINNER</div>' : ''}
+            <h3 class="battle-title">${escapeHtml(song.title)}</h3>
+            <p class="battle-artist">${escapeHtml(song.artist)}</p>
+            <div class="battle-score">${Math.round(song.score * 100)}</div>
+            <div class="battle-metrics">
+                <div class="battle-metric">
+                    <span class="metric-name">⚡ Energy</span>
+                    <span class="metric-val">${song.metrics.energy.toFixed(2)}</span>
+                </div>
+                <div class="battle-metric">
+                    <span class="metric-name">💃 Danceability</span>
+                    <span class="metric-val">${song.metrics.danceability.toFixed(2)}</span>
+                </div>
+                <div class="battle-metric">
+                    <span class="metric-name">🎼 Tempo</span>
+                    <span class="metric-val">${song.metrics.tempo} BPM</span>
+                </div>
+                <div class="battle-metric">
+                    <span class="metric-name">⭐ Popularity</span>
+                    <span class="metric-val">${song.metrics.popularity}/100</span>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    };
+    
+    const winner1 = result.winner === 'song1';
+    displayBattleCard(result.song1, winner1);
+    displayBattleCard(result.song2, !winner1);
+    
+    container.classList.remove('hidden');
+}
+
+/* ============================================================================
+   ANALYTICS
+   ============================================================================ */
+
+async function loadAnalytics() {
+    const result = await callAPI('/api/analytics', 'GET');
+    if (!result) return;
+    
+    state.analytics = result;
+    displayAnalytics(result);
+}
+
+function displayAnalytics(data) {
+    // Update stat cards with animation
+    animateCounter('totalSongs', 0, data.summary.total_songs, 1000);
+    animateCounter('avgEnergy', 0, parseFloat(data.summary.avg_energy.toFixed(2)), 1000, 2);
+    animateCounter('avgDance', 0, parseFloat(data.summary.avg_danceability.toFixed(2)), 1000, 2);
+    animateCounter('avgTempo', 0, Math.round(data.summary.avg_tempo), 1000);
+    animateCounter('avgPopularity', 0, Math.round(data.summary.avg_popularity), 1000);
+    
+    // Most common mood
+    const moodCounts = {};
+    if (state.songs.length > 0) {
+        state.songs.forEach(song => {
+            moodCounts[song.mood || 'Unknown'] = (moodCounts[song.mood || 'Unknown'] || 0) + 1;
+        });
+        const commonMood = Object.keys(moodCounts).reduce((a, b) => 
+            moodCounts[a] > moodCounts[b] ? a : b
+        );
+        document.getElementById('commonMood').textContent = commonMood;
+    }
+    
+    // Avg match %
+    if (state.currentRecommendations && state.currentRecommendations.length > 0) {
+        const avgMatch = Math.round(
+            state.currentRecommendations.reduce((sum, r) => sum + r.similarity_score * 100, 0) / 
+            state.currentRecommendations.length
+        );
+        document.getElementById('avgMatch').textContent = avgMatch + '%';
+    }
+    
+    // Dominant tempo
+    const tempoRanges = data.distributions.tempo;
+    const dominant = Object.keys(tempoRanges).reduce((a, b) => 
+        tempoRanges[a] > tempoRanges[b] ? a : b
+    );
+    const tempoLabels = {
+        slow: 'Slow (<90)',
+        moderate: 'Moderate (90-130)',
+        fast: 'Fast (>130)'
+    };
+    document.getElementById('dominantTempo').textContent = tempoLabels[dominant] || 'Moderate';
+    
+    // Charts
+    displayChart('tempoChart', [
+        { label: 'Slow (<90)', value: data.distributions.tempo.slow },
+        { label: 'Moderate', value: data.distributions.tempo.moderate },
+        { label: 'Fast (>130)', value: data.distributions.tempo.fast }
+    ]);
+    
+    displayChart('energyChart', [
+        { label: 'Low (<0.4)', value: data.distributions.energy.low },
+        { label: 'Medium', value: data.distributions.energy.medium },
+        { label: 'High (>0.7)', value: data.distributions.energy.high }
+    ]);
+    
+    document.getElementById('analyticsSection').classList.remove('hidden');
+}
+
+function animateCounter(id, start, end, duration, decimals = 0) {
+    const element = document.getElementById(id);
+    const increment = (end - start) / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= end) {
+            current = end;
+            clearInterval(timer);
+        }
+        
+        if (decimals > 0) {
+            element.textContent = current.toFixed(decimals);
+        } else {
+            element.textContent = Math.round(current);
+        }
+    }, 16);
+}
+
+function displayChart(id, data) {
+    const container = document.getElementById(id);
+    container.innerHTML = '';
+    
+    const maxValue = Math.max(...data.map(d => d.value));
+    
+    data.forEach(item => {
+        const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = percentage + '%';
+        
+        bar.innerHTML = `
+            <div class="bar-value">${item.value}</div>
+            <div class="bar-label">${item.label}</div>
+        `;
+        
+        container.appendChild(bar);
+    });
+}
+
+/* ============================================================================
+   UTILITIES
+   ============================================================================ */
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+console.log('✓ Audio Intelligence Platform ready');
