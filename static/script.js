@@ -174,12 +174,12 @@ async function handleSearch() {
 
 function renderSearchResults(results) {
     const list = document.getElementById('resultsList');
-    const section = document.getElementById('searchResults');
+    const section = document.getElementById('results');
     const count = document.getElementById('resultsCount');
     if (!list || !section) return;
 
     list.innerHTML = '';
-    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
+    if (count) count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
 
     if (results.length === 0) {
         list.innerHTML = `
@@ -223,7 +223,7 @@ async function selectSong(song) {
     document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
     document.getElementById('moodFilterResults')?.classList.add('hidden');
 
-    const card = document.getElementById('selectedSongCard');
+    const card = document.getElementById('selectedSongDetail');
     if (card) {
         card.innerHTML = `
             <h3 class="song-title">${escapeHtml(song.title)}</h3>
@@ -235,8 +235,8 @@ async function selectSong(song) {
                 <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
             </div>`;
     }
-    document.getElementById('selectedSongSection')?.classList.remove('hidden');
-   
+    document.getElementById('song-detail')?.classList.remove('hidden');
+
     displaySpotifyPlayer(song);
 
     await Promise.all([
@@ -245,7 +245,7 @@ async function selectSong(song) {
     ]);
 
     setTimeout(() => {
-        document.getElementById('selectedSongSection')
+        document.getElementById('song-detail')
             ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
 }
@@ -257,13 +257,13 @@ async function getRecommendations(songId) {
 }
 
 function renderRecommendations(recs) {
-    const grid = document.getElementById('recommendationsGrid');
+    const grid = document.getElementById('recommendationsList');
     const section = document.getElementById('recommendationsSection');
     if (!grid || !section) return;
     grid.innerHTML = '';
 
     recs.forEach((rec, i) => {
-        const confidence = Math.round((rec.similarity_score || 0) * 100);
+        const confidence = Math.round(((rec.similarity_score ?? rec.similarity ?? 0) * 100));
         const reason = reasonFor(confidence);
         const card = document.createElement('div');
         card.className = 'rec-card';
@@ -357,15 +357,15 @@ function filterByMood(mood, cardEl) {
     const empty = document.getElementById('moodEmptyState');
     if (!wrap || !grid) return;
 
-    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
-    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
+    if (title) title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
+    if (meta) meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
     grid.innerHTML = '';
 
     if (songs.length === 0) {
-        empty.classList.remove('hidden');
+        if (empty) empty.classList.remove('hidden');
         grid.classList.add('hidden');
     } else {
-        empty.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
         grid.classList.remove('hidden');
         songs.forEach((s, i) => {
             // mood payload may lack tempo/popularity — fall back to full songs list
@@ -504,8 +504,8 @@ function renderBattle(r) {
     if (!wrap) return;
     const s1 = r.song1 || {};
     const s2 = r.song2 || {};
-    const winner = r.winner || {};
-    const winnerIs1 = winner.id === s1.id;
+    const winnerIs1 = r.winner === 'song1' || (r.winner && r.winner.id === s1.id);
+    const winner = winnerIs1 ? s1 : s2;
 
     wrap.innerHTML = `
         <div class="battle-winner">
@@ -532,6 +532,7 @@ function battleSide(s, isWinner) {
             </div>
         </div>`;
 }
+
 /* ============================================================================
    UTIL
    ============================================================================ */
@@ -562,13 +563,11 @@ function displaySpotifyPlayer(song) {
                 Spotify preview not available for this track yet.
             </div>
         `;
-
         playerContainer.classList.remove('hidden');
         return;
     }
 
-    const spotifyUrl =
-        `https://open.spotify.com/embed/track/${song.spotify_track_id}`;
+    const spotifyUrl = `https://open.spotify.com/embed/track/${song.spotify_track_id}`;
 
     playerContainer.innerHTML = `
         <iframe
@@ -585,6 +584,3 @@ function displaySpotifyPlayer(song) {
 
     playerContainer.classList.remove('hidden');
 }
-
-
-
