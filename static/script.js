@@ -1,1642 +1,543 @@
 /* ============================================================================
-   SONAR · AI MUSIC INTELLIGENCE
-   Premium futuristic frontend — cyan+purple neon, glassmorphism, motion
+   SONAR · AI MUSIC INTELLIGENCE — FRONTEND
+   Talks to existing Flask backend (/api/search, /api/recommend, /api/battle,
+   /api/moods, /api/analytics, /api/insights). No backend changes.
    ============================================================================ */
 
-/* ---- TOKENS ---- */
-:root {
-    --bg-0: #05060d;
-    --bg-1: #0a0c1a;
-    --bg-2: #11142a;
-    --surface: rgba(18, 22, 44, 0.55);
-    --surface-strong: rgba(22, 26, 52, 0.85);
-    --border: rgba(140, 170, 255, 0.12);
-    --border-strong: rgba(0, 217, 255, 0.32);
+const state = {
+    songs: [],
+    allMoods: {},
+    selectedSong: null,
+    selectedMood: null,
+    analytics: null,
+};
 
-    --cyan: #00e5ff;
-    --cyan-soft: #5af2ff;
-    --purple: #a26bff;
-    --purple-soft: #c79bff;
-    --pink: #ff4fa3;
-    --green: #4dffb3;
+const MOOD_EMOJI = {
+    'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
+    'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
+    'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '🌧️',
+    'Focus Mode': '🎯',
+};
 
-    --text: #f5f7ff;
-    --text-dim: rgba(245, 247, 255, 0.72);
-    --text-muted: rgba(245, 247, 255, 0.48);
-    --text-faint: rgba(245, 247, 255, 0.30);
+/* ============================================================================
+   BOOTSTRAP
+   ============================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    initParticles();
+    bindListeners();
+    loadInitial();
+});
 
-    --grad-primary: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
-    --grad-soft: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(162, 107, 255, 0.18));
-    --grad-glow: radial-gradient(circle at 30% 30%, rgba(0, 229, 255, 0.35), transparent 60%),
-                 radial-gradient(circle at 70% 70%, rgba(162, 107, 255, 0.35), transparent 60%);
+/* ============================================================================
+   LIGHTWEIGHT PARTICLE CANVAS (no three.js needed)
+   ============================================================================ */
+function initParticles() {
+    const canvas = document.getElementById('particles-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-    --shadow-glow: 0 0 40px rgba(0, 229, 255, 0.18), 0 0 80px rgba(162, 107, 255, 0.12);
-    --shadow-card: 0 12px 48px rgba(0, 0, 0, 0.4);
-    --shadow-lift: 0 24px 60px rgba(0, 229, 255, 0.15), 0 12px 32px rgba(162, 107, 255, 0.18);
+    let w, h, particles = [];
+    const COUNT = window.innerWidth < 768 ? 30 : 60;
 
-    --radius-sm: 10px;
-    --radius: 16px;
-    --radius-lg: 24px;
-    --radius-pill: 999px;
+    function resize() {
+        w = canvas.width = window.innerWidth * window.devicePixelRatio;
+        h = canvas.height = window.innerHeight * window.devicePixelRatio;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+    }
+    resize();
+    window.addEventListener('resize', resize);
 
-    --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --t-fast: 180ms var(--ease);
-    --t-med: 320ms var(--ease);
-    --t-slow: 600ms var(--ease);
+    for (let i = 0; i < COUNT; i++) {
+        particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 1.6 + 0.4,
+            hue: Math.random() > 0.5 ? 190 : 270, // cyan-ish or purple
+        });
+    }
 
-    --container: 1240px;
-}
-
-/* ---- RESET ---- */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-
-body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg-0);
-    color: var(--text);
-    line-height: 1.55;
-    min-height: 100vh;
-    overflow-x: hidden;
-    position: relative;
-    font-feature-settings: "cv11", "ss01", "ss03";
-}
-
-a { color: inherit; text-decoration: none; }
-button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-input, select { font: inherit; color: inherit; }
-.hidden { display: none !important; }
-
-.container {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 0 1.5rem;
+    function tick() {
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = w; else if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h; else if (p.y > h) p.y = 0;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, 0.55)`;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = `hsla(${p.hue}, 100%, 65%, 0.6)`;
+            ctx.fill();
+        });
+        requestAnimationFrame(tick);
+    }
+    tick();
 }
 
 /* ============================================================================
-   AMBIENT BACKGROUND
+   EVENT LISTENERS
    ============================================================================ */
-.ambient {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-    background: var(--bg-0);
-}
+function bindListeners() {
+    const form = document.getElementById('searchForm');
+    if (form) form.addEventListener('submit', e => { e.preventDefault(); handleSearch(); });
 
-.grid-bg {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(140, 170, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(140, 170, 255, 0.04) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-}
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) searchBtn.addEventListener('click', e => { e.preventDefault(); handleSearch(); });
 
-.aurora {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.55;
-    animation: drift 22s ease-in-out infinite;
-}
-.aurora-1 { width: 720px; height: 720px; background: radial-gradient(circle, var(--cyan), transparent 70%); top: -200px; left: -200px; }
-.aurora-2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--purple), transparent 70%); top: 30%; right: -180px; animation-delay: -7s; }
-.aurora-3 { width: 540px; height: 540px; background: radial-gradient(circle, var(--pink), transparent 70%); bottom: -200px; left: 30%; animation-delay: -14s; opacity: 0.35; }
+    const input = document.getElementById('searchInput');
+    if (input) input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
+    });
 
-@keyframes drift {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33%      { transform: translate(80px, -60px) scale(1.08); }
-    66%      { transform: translate(-60px, 80px) scale(0.95); }
-}
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const q = chip.dataset.query;
+            document.getElementById('searchInput').value = q;
+            handleSearch();
+        });
+    });
 
-.noise {
-    position: absolute;
-    inset: 0;
-    opacity: 0.04;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
+    const battleBtn = document.getElementById('battleBtn');
+    if (battleBtn) battleBtn.addEventListener('click', handleBattle);
 
-#particles-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+    const clearMood = document.getElementById('clearMoodFilterBtn');
+    if (clearMood) clearMood.addEventListener('click', clearMoodFilter);
 }
 
 /* ============================================================================
-   NAV
+   INITIAL LOAD
    ============================================================================ */
-.nav {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    padding: 1.1rem 0;
-    backdrop-filter: blur(20px) saturate(160%);
-    background: rgba(5, 6, 13, 0.55);
-    border-bottom: 1px solid var(--border);
-}
-
-.nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    font-family: 'Sora', sans-serif;
-}
-
-.brand-mark {
-    width: 32px; height: 32px;
-    border-radius: 10px;
-    background: var(--grad-primary);
-    display: grid; place-items: center;
-    box-shadow: 0 0 24px rgba(0, 229, 255, 0.5);
-    position: relative;
-}
-.brand-dot {
-    width: 10px; height: 10px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 0 12px white;
-}
-
-.brand-text { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
-.brand-text-dim { color: var(--text-muted); font-weight: 500; }
-
-.nav-links { display: flex; gap: 2rem; }
-.nav-links a {
-    font-size: 0.875rem;
-    color: var(--text-dim);
-    font-weight: 500;
-    transition: color var(--t-fast);
-    position: relative;
-}
-.nav-links a:hover { color: var(--text); }
-.nav-links a::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -6px;
-    height: 1px;
-    background: var(--grad-primary);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--t-med);
-}
-.nav-links a:hover::after { transform: scaleX(1); }
-
-.nav-pill {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.45rem 0.9rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-}
-.pulse-dot {
-    width: 7px; height: 7px;
-    background: var(--green);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--green);
-    animation: pulse 2s ease-in-out infinite;
-}
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.85); }
+async function loadInitial() {
+    await loadMoods();
+    await loadAnalytics();
+    populateBattleSelects();
 }
 
 /* ============================================================================
-   HERO
+   API
    ============================================================================ */
-.hero {
-    padding: 6rem 0 4rem;
-    position: relative;
-    text-align: center;
+async function api(endpoint, method = 'GET', data = null) {
+    showLoading(true);
+    try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (data) opts.body = JSON.stringify(data);
+        const res = await fetch(endpoint, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('API error', endpoint, err);
+        return null;
+    } finally {
+        showLoading(false);
+    }
 }
 
-.hero-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.9rem;
-    border-radius: var(--radius-pill);
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 2rem;
-    animation: fadeUp 0.8s var(--ease) both;
-}
-.tag-dot {
-    width: 6px; height: 6px;
-    background: var(--cyan);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--cyan);
-}
-
-.hero-title {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(2.5rem, 6vw, 4.75rem);
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-    max-width: 900px;
-    margin: 0 auto 1.5rem;
-    animation: fadeUp 0.9s var(--ease) 0.1s both;
-}
-
-.gradient-text {
-    background: var(--grad-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    position: relative;
-}
-
-.hero-sub {
-    font-size: clamp(1rem, 1.5vw, 1.18rem);
-    color: var(--text-dim);
-    max-width: 640px;
-    margin: 0 auto 3rem;
-    animation: fadeUp 0.9s var(--ease) 0.2s both;
-}
-
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* SEARCH SHELL */
-.search-shell {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    max-width: 680px;
-    margin: 0 auto 1.5rem;
-    padding: 0.5rem 0.5rem 0.5rem 1.25rem;
-    background: var(--surface-strong);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-pill);
-    backdrop-filter: blur(20px);
-    box-shadow: var(--shadow-glow);
-    transition: all var(--t-med);
-    animation: fadeUp 0.9s var(--ease) 0.3s both;
-}
-.search-shell:focus-within {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.15), var(--shadow-glow);
-    transform: translateY(-2px);
-}
-.search-icon { color: var(--text-muted); display: flex; }
-.search-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    padding: 0.85rem 0.5rem;
-    font-size: 1rem;
-    color: var(--text);
-}
-.search-input::placeholder { color: var(--text-faint); }
-
-.hero-chips {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 4rem;
-    animation: fadeUp 0.9s var(--ease) 0.4s both;
-}
-.chip-label {
-    font-size: 0.78rem;
-    color: var(--text-faint);
-    font-family: 'JetBrains Mono', monospace;
-    margin-right: 0.25rem;
-}
-.chip {
-    padding: 0.4rem 0.85rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    font-size: 0.82rem;
-    color: var(--text-dim);
-    transition: all var(--t-fast);
-}
-.chip:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-    background: var(--surface-strong);
-    transform: translateY(-1px);
-}
-
-/* HERO VISUAL */
-.hero-visual {
-    margin: 2rem auto 0;
-    max-width: 720px;
-    height: 220px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2.5rem;
-}
-
-.orb {
-    width: 120px; height: 120px;
-    position: relative;
-    display: grid; place-items: center;
-}
-.orb-core {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    background: var(--grad-primary);
-    box-shadow: 0 0 60px rgba(0, 229, 255, 0.7), 0 0 120px rgba(162, 107, 255, 0.5);
-    animation: orbPulse 3s ease-in-out infinite;
-}
-.orb-ring {
-    position: absolute;
-    border-radius: 50%;
-    border: 1px solid var(--border-strong);
-    animation: orbRing 4s linear infinite;
-}
-.orb-ring-1 { width: 90px; height: 90px; border-color: rgba(0, 229, 255, 0.4); }
-.orb-ring-2 { width: 130px; height: 130px; border-color: rgba(162, 107, 255, 0.3); animation-direction: reverse; animation-duration: 6s; }
-.orb-ring-3 { width: 170px; height: 170px; border-color: rgba(255, 79, 163, 0.2); animation-duration: 8s; }
-
-@keyframes orbPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(0, 229, 255, 0.7), 0 0 120px rgba(162, 107, 255, 0.5); }
-    50% { transform: scale(1.08); box-shadow: 0 0 80px rgba(0, 229, 255, 0.9), 0 0 160px rgba(162, 107, 255, 0.7); }
-}
-@keyframes orbRing {
-    from { transform: rotate(0deg) scale(1); }
-    50%  { transform: rotate(180deg) scale(1.04); }
-    to   { transform: rotate(360deg) scale(1); }
-}
-
-.waveform {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 40px;
-}
-.waveform span {
-    display: block;
-    width: 3px;
-    background: var(--grad-primary);
-    border-radius: 2px;
-    animation: wave 1.4s ease-in-out infinite;
-}
-.waveform span:nth-child(1)  { height: 30%; animation-delay: 0.0s; }
-.waveform span:nth-child(2)  { height: 55%; animation-delay: 0.05s; }
-.waveform span:nth-child(3)  { height: 75%; animation-delay: 0.10s; }
-.waveform span:nth-child(4)  { height: 95%; animation-delay: 0.15s; }
-.waveform span:nth-child(5)  { height: 70%; animation-delay: 0.20s; }
-.waveform span:nth-child(6)  { height: 45%; animation-delay: 0.25s; }
-.waveform span:nth-child(7)  { height: 65%; animation-delay: 0.30s; }
-.waveform span:nth-child(8)  { height: 90%; animation-delay: 0.35s; }
-.waveform span:nth-child(9)  { height: 60%; animation-delay: 0.40s; }
-.waveform span:nth-child(10) { height: 40%; animation-delay: 0.45s; }
-.waveform span:nth-child(11) { height: 55%; animation-delay: 0.50s; }
-.waveform span:nth-child(12) { height: 80%; animation-delay: 0.55s; }
-.waveform span:nth-child(13) { height: 100%; animation-delay: 0.60s; }
-.waveform span:nth-child(14) { height: 70%; animation-delay: 0.65s; }
-.waveform span:nth-child(15) { height: 50%; animation-delay: 0.70s; }
-.waveform span:nth-child(16) { height: 65%; animation-delay: 0.75s; }
-.waveform span:nth-child(17) { height: 85%; animation-delay: 0.80s; }
-.waveform span:nth-child(18) { height: 55%; animation-delay: 0.85s; }
-.waveform span:nth-child(19) { height: 40%; animation-delay: 0.90s; }
-.waveform span:nth-child(20) { height: 60%; animation-delay: 0.95s; }
-
-@keyframes wave {
-    0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
-    50%      { transform: scaleY(1); opacity: 1; }
+function showLoading(show) {
+    const el = document.getElementById('loadingIndicator');
+    if (el) el.classList.toggle('hidden', !show);
 }
 
 /* ============================================================================
-   BUTTONS
+   TOAST (inline message)
    ============================================================================ */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.85rem 1.5rem;
-    border-radius: var(--radius-pill);
-    font-weight: 600;
-    font-size: 0.92rem;
-    letter-spacing: -0.005em;
-    transition: all var(--t-med);
-    white-space: nowrap;
-}
-
-.btn-primary {
-    background: var(--grad-primary);
-    color: #04060f;
-    box-shadow: 0 8px 24px rgba(0, 229, 255, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    position: relative;
-    overflow: hidden;
-}
-.btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
-    transform: translateX(-100%);
-    transition: transform 0.6s;
-}
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 229, 255, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-}
-.btn-primary:hover::before { transform: translateX(100%); }
-.btn-primary:active { transform: translateY(0); }
-
-.btn-ghost {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 0.55rem 1rem;
-    font-size: 0.85rem;
-}
-.btn-ghost:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-    background: var(--surface-strong);
-}
-
-.btn-block { width: 100%; }
-
-/* ============================================================================
-   SECTIONS
-   ============================================================================ */
-.section {
-    padding: 5rem 0;
-    position: relative;
-}
-
-.section-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 2rem;
-    margin-bottom: 2.5rem;
-    flex-wrap: wrap;
-}
-
-.eyebrow {
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--cyan);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 0.75rem;
-}
-
-.section-title {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(1.85rem, 3.5vw, 2.65rem);
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    line-height: 1.1;
-}
-
-.section-sub {
-    color: var(--text-dim);
-    margin-top: 0.6rem;
-    font-size: 1rem;
-    max-width: 540px;
-}
-
-.count-pill {
-    padding: 0.4rem 0.85rem;
-    border-radius: var(--radius-pill);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--text-dim);
+let toastTimer;
+function toast(msg) {
+    const el = document.getElementById('toast');
+    const m = document.getElementById('toastMsg');
+    if (!el || !m) return;
+    m.textContent = msg;
+    el.classList.remove('hidden');
+    requestAnimationFrame(() => el.classList.add('show'));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.classList.add('hidden'), 320);
+    }, 2600);
 }
 
 /* ============================================================================
-   CARDS — RESULTS, RECS, SELECTED
+   SEARCH
    ============================================================================ */
-.results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+async function handleSearch() {
+    const input = document.getElementById('searchInput');
+    const query = (input?.value || '').trim();
+    if (query.length < 2) { toast('Type at least 2 characters'); return; }
+
+    const result = await api('/api/search', 'POST', { query });
+    if (!result || !result.results) { toast('Search failed — please try again'); return; }
+
+    renderSearchResults(result.results);
 }
 
-.result-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all var(--t-med);
-    position: relative;
-    overflow: hidden;
-    animation: cardIn 0.5s var(--ease) both;
-    backdrop-filter: blur(10px);
-}
-.result-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--grad-soft);
-    opacity: 0;
-    transition: opacity var(--t-med);
-    pointer-events: none;
-}
-.result-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-lift);
-}
-.result-card:hover::before { opacity: 1; }
-.result-card > * { position: relative; }
+function renderSearchResults(results) {
+    const list = document.getElementById('resultsList');
+    const section = document.getElementById('searchResults');
+    const count = document.getElementById('resultsCount');
+    if (!list || !section) return;
 
-.result-card h4 {
-    font-family: 'Sora', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-}
-.result-card p {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-}
-.metrics-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--border);
-}
-.metric { text-align: center; }
-.metric-label {
-    font-size: 0.65rem;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 0.2rem;
-}
-.metric-value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-family: 'Space Grotesk', sans-serif;
-    color: var(--text);
+    list.innerHTML = '';
+    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
+
+    if (results.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <div class="empty-icon">🔍</div>
+                <p>No tracks matched that search. Try another title or artist.</p>
+            </div>`;
+        section.classList.remove('hidden');
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
+
+    results.forEach((song, i) => list.appendChild(buildResultCard(song, i)));
+    section.classList.remove('hidden');
+    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-@keyframes cardIn {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* SELECTED CARD */
-.selected-card {
-    background: var(--surface-strong);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    box-shadow: var(--shadow-glow);
-    backdrop-filter: blur(20px);
-    position: relative;
-    overflow: hidden;
-}
-.selected-card::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: var(--grad-glow);
-    opacity: 0.35;
-    pointer-events: none;
-    animation: slowSpin 30s linear infinite;
-}
-.selected-card > * { position: relative; z-index: 1; }
-.song-title {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(1.5rem, 3vw, 2.1rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 0.35rem;
-}
-.song-artist { color: var(--text-dim); font-size: 1.05rem; margin-bottom: 1.5rem; }
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-}
-.info-item {
-    background: rgba(5, 6, 13, 0.5);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-}
-.info-item-label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 0.4rem;
-}
-.info-item-value {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.35rem;
-    font-weight: 600;
-}
-
-@keyframes slowSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+function buildResultCard(song, i = 0) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.animationDelay = `${i * 50}ms`;
+    card.innerHTML = `
+        <h4>${escapeHtml(song.title)}</h4>
+        <p>${escapeHtml(song.artist)}</p>
+        <div class="metrics-row">
+            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
+            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
+        </div>`;
+    card.addEventListener('click', () => selectSong(song));
+    return card;
 }
 
 /* ============================================================================
-   MOOD GRID
+   SELECT SONG → RECS + INSIGHTS
    ============================================================================ */
-.mood-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
+async function selectSong(song) {
+    state.selectedSong = song;
+    state.selectedMood = null;
+    document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
+    document.getElementById('moodFilterResults')?.classList.add('hidden');
+
+    const card = document.getElementById('selectedSongCard');
+    if (card) {
+        card.innerHTML = `
+            <h3 class="song-title">${escapeHtml(song.title)}</h3>
+            <p class="song-artist">${escapeHtml(song.artist)}</p>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-item-label">Energy</div><div class="info-item-value">${song.energy.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Danceability</div><div class="info-item-value">${song.danceability.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Tempo</div><div class="info-item-value">${song.tempo} <span style="font-size:0.7em;color:var(--text-muted)">BPM</span></div></div>
+                <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
+            </div>`;
+    }
+    document.getElementById('selectedSongSection')?.classList.remove('hidden');
+
+    await Promise.all([
+        getRecommendations(song.id),
+        getInsights(song.id),
+    ]);
+
+    setTimeout(() => {
+        document.getElementById('selectedSongSection')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
 }
 
-.mood-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem 1.25rem;
-    cursor: pointer;
-    transition: all var(--t-med);
-    text-align: left;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
+async function getRecommendations(songId) {
+    const result = await api('/api/recommend', 'POST', { song_id: songId, count: 6 });
+    if (!result || !result.recommendations) return;
+    renderRecommendations(result.recommendations);
 }
-.mood-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--grad-soft);
-    opacity: 0;
-    transition: opacity var(--t-med);
-}
-.mood-card > * { position: relative; }
-.mood-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-lift);
-}
-.mood-card:hover::before { opacity: 0.6; }
 
-.mood-card.active {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 1px var(--cyan), 0 0 40px rgba(0, 229, 255, 0.35);
-    background: var(--surface-strong);
-}
-.mood-card.active::before { opacity: 1; }
+function renderRecommendations(recs) {
+    const grid = document.getElementById('recommendationsGrid');
+    const section = document.getElementById('recommendationsSection');
+    if (!grid || !section) return;
+    grid.innerHTML = '';
 
-.mood-emoji {
-    display: inline-block;
-    font-size: 1.6rem;
-    margin-bottom: 0.6rem;
-    filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.3));
-}
-.mood-name {
-    font-family: 'Sora', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-    letter-spacing: -0.01em;
-}
-.mood-count {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-}
-.mood-card.active .mood-count { color: var(--cyan); }
+    recs.forEach((rec, i) => {
+        const confidence = Math.round((rec.similarity_score || 0) * 100);
+        const reason = reasonFor(confidence);
+        const card = document.createElement('div');
+        card.className = 'rec-card';
+        card.style.animationDelay = `${i * 60}ms`;
+        card.innerHTML = `
+            <div class="rec-head">
+                <div>
+                    <div class="rec-title">${escapeHtml(rec.title)}</div>
+                    <div class="rec-artist">${escapeHtml(rec.artist)}</div>
+                </div>
+                <div class="rec-score">${confidence}%</div>
+            </div>
+            <div class="rec-reason">${reason}</div>
+            <div class="rec-features">
+                <div class="rec-feature"><div class="feature-label">Energy</div><div class="feature-value">${rec.energy.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Dance</div><div class="feature-value">${rec.danceability.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Tempo</div><div class="feature-value">${rec.tempo}</div></div>
+                <div class="rec-feature"><div class="feature-label">Pop</div><div class="feature-value">${rec.popularity}</div></div>
+            </div>
+            ${rec.mood ? `<span class="rec-mood">${escapeHtml(rec.mood)}</span>` : ''}`;
+        grid.appendChild(card);
+    });
 
-.mood-results {
-    margin-top: 2.5rem;
-    padding-top: 2.5rem;
-    border-top: 1px solid var(--border);
-    animation: fadeUp 0.5s var(--ease) both;
+    section.classList.remove('hidden');
 }
-.mood-results-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+
+function reasonFor(c) {
+    if (c >= 95) return 'Near-perfect match — almost identical sonic signature.';
+    if (c >= 85) return 'Tight match on energy and danceability.';
+    if (c >= 75) return 'Strong overlap across multiple audio features.';
+    if (c >= 65) return 'Similar overall vibe and mood.';
+    return 'Recommended on broad audio similarity.';
 }
-.mood-results-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 1.3rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-}
-.mood-results-meta {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-top: 0.2rem;
-    font-family: 'JetBrains Mono', monospace;
+
+async function getInsights(songId) {
+    const result = await api('/api/insights', 'POST', { song_id: songId });
+    if (!result || !result.insights) return;
+    const list = document.getElementById('insightsList');
+    const section = document.getElementById('insightsSection');
+    if (!list || !section) return;
+    list.innerHTML = '';
+    result.insights.forEach((text, i) => {
+        const item = document.createElement('div');
+        item.className = 'insight-item';
+        item.style.animationDelay = `${i * 80}ms`;
+        item.textContent = text;
+        list.appendChild(item);
+    });
+    section.classList.remove('hidden');
 }
 
 /* ============================================================================
-   RECOMMENDATIONS
+   MOODS
    ============================================================================ */
-.rec-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 1rem;
-}
-.rec-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: all var(--t-med);
-    position: relative;
-    overflow: hidden;
-    animation: cardIn 0.5s var(--ease) both;
-    backdrop-filter: blur(10px);
-}
-.rec-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--grad-primary);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--t-med);
-}
-.rec-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-lift);
-}
-.rec-card:hover::before { transform: scaleX(1); }
+async function loadMoods() {
+    const result = await api('/api/moods', 'GET');
+    if (!result || !result.moods) return;
 
-.rec-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    state.allMoods = result.moods;
+    state.songs = [];
+    Object.values(result.moods).forEach(arr => state.songs.push(...arr));
+
+    const grid = document.getElementById('moodGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    Object.entries(result.moods).forEach(([mood, songs], i) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'mood-card';
+        card.style.animationDelay = `${i * 40}ms`;
+        card.innerHTML = `
+            <div class="mood-emoji">${MOOD_EMOJI[mood] || '🎵'}</div>
+            <div class="mood-name">${escapeHtml(mood)}</div>
+            <div class="mood-count">${songs.length} track${songs.length === 1 ? '' : 's'}</div>`;
+        card.addEventListener('click', () => filterByMood(mood, card));
+        grid.appendChild(card);
+    });
 }
-.rec-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 600;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-    margin-bottom: 0.2rem;
+
+function filterByMood(mood, cardEl) {
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
+    state.selectedMood = mood;
+
+    const songs = state.allMoods[mood] || [];
+    const wrap = document.getElementById('moodFilterResults');
+    const title = document.getElementById('moodFilterTitle');
+    const meta = document.getElementById('moodFilterMeta');
+    const grid = document.getElementById('moodFilterGrid');
+    const empty = document.getElementById('moodEmptyState');
+    if (!wrap || !grid) return;
+
+    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
+    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
+    grid.innerHTML = '';
+
+    if (songs.length === 0) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+    } else {
+        empty.classList.add('hidden');
+        grid.classList.remove('hidden');
+        songs.forEach((s, i) => {
+            // mood payload may lack tempo/popularity — fall back to full songs list
+            const full = state.songs.find(x => x.id === s.id) || s;
+            grid.appendChild(buildResultCard({
+                id: full.id,
+                title: full.title,
+                artist: full.artist,
+                energy: full.energy ?? 0,
+                danceability: full.danceability ?? 0,
+                tempo: full.tempo ?? 0,
+                popularity: full.popularity ?? 0,
+            }, i));
+        });
+    }
+
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
-.rec-artist { font-size: 0.85rem; color: var(--text-muted); }
-.rec-score {
-    flex-shrink: 0;
-    padding: 0.35rem 0.7rem;
-    border-radius: var(--radius-pill);
-    background: var(--grad-primary);
-    color: #04060f;
-    font-size: 0.78rem;
-    font-weight: 700;
-    font-family: 'JetBrains Mono', monospace;
-}
-.rec-reason {
-    font-size: 0.82rem;
-    color: var(--text-dim);
-    padding: 0.7rem 0.85rem;
-    background: rgba(5, 6, 13, 0.45);
-    border-radius: var(--radius-sm);
-    border-left: 2px solid var(--cyan);
-    margin-bottom: 1rem;
-}
-.rec-features {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--border);
-    margin-bottom: 0.85rem;
-}
-.rec-feature { text-align: center; }
-.feature-label {
-    font-size: 0.6rem;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 0.2rem;
-}
-.feature-value {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-.rec-mood {
-    display: inline-block;
-    padding: 0.3rem 0.7rem;
-    border-radius: var(--radius-pill);
-    background: rgba(162, 107, 255, 0.15);
-    border: 1px solid rgba(162, 107, 255, 0.3);
-    font-size: 0.72rem;
-    color: var(--purple-soft);
-    font-family: 'JetBrains Mono', monospace;
+
+function clearMoodFilter() {
+    state.selectedMood = null;
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('moodFilterResults')?.classList.add('hidden');
 }
 
 /* ============================================================================
-   INSIGHTS
+   ANALYTICS
    ============================================================================ */
-.insights-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 0.85rem;
-}
-.insight-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.1rem 1.3rem;
-    font-size: 0.92rem;
-    color: var(--text-dim);
-    line-height: 1.55;
-    animation: cardIn 0.5s var(--ease) both;
-    backdrop-filter: blur(10px);
-    position: relative;
-}
-.insight-item::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 20%; bottom: 20%;
-    width: 2px;
-    background: var(--grad-primary);
-    border-radius: 2px;
+async function loadAnalytics() {
+    const result = await api('/api/analytics', 'GET');
+    if (!result || !result.summary) return;
+    state.analytics = result;
+
+    const s = result.summary;
+    animateNumber('totalSongs', s.total_songs, 0);
+    animateNumber('avgEnergy', s.avg_energy, 2);
+    animateNumber('avgDance', s.avg_danceability, 2);
+    animateNumber('avgTempo', s.avg_tempo, 0);
+    animateNumber('avgPopularity', s.avg_popularity, 0);
+
+    // mini bars
+    fillBar(document.querySelector('#avgEnergy + .bar-mini .bar-mini-fill'), s.avg_energy * 100);
+    fillBar(document.querySelector('#avgDance + .bar-mini .bar-mini-fill'), s.avg_danceability * 100);
+    fillBar(document.querySelector('#avgPopularity + .bar-mini .bar-mini-fill'), s.avg_popularity);
+
+    // dominant tempo
+    const td = result.distributions?.tempo || {};
+    const tempoLabels = { slow: 'Slow', moderate: 'Moderate', fast: 'Fast' };
+    const domTempo = Object.entries(td).sort((a, b) => b[1] - a[1])[0];
+    if (domTempo) setText('dominantTempo', tempoLabels[domTempo[0]] || domTempo[0]);
+
+    // top mood (computed from state.allMoods if available)
+    const topMood = Object.entries(state.allMoods).sort((a, b) => b[1].length - a[1].length)[0];
+    if (topMood) setText('commonMood', topMood[0]);
+
+    // avg match — approximate (we don't have per-pair data); show a sensible derived value
+    setText('avgMatch', Math.round(s.avg_energy * 50 + s.avg_danceability * 50) + '%');
+
+    // charts
+    renderBarChart('tempoChart', td, { slow: 'Slow (<90)', moderate: 'Moderate', fast: 'Fast (≥130)' });
+    renderBarChart('energyChart', result.distributions?.energy || {}, { low: 'Low (<.4)', medium: 'Medium', high: 'High (≥.7)' });
 }
 
-/* ============================================================================
-   ANALYTICS DASHBOARD
-   ============================================================================ */
-.stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-.stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.4rem;
-    transition: all var(--t-med);
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-}
-.stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 80px; height: 80px;
-    background: radial-gradient(circle at top right, rgba(0, 229, 255, 0.15), transparent 70%);
-    pointer-events: none;
-}
-.stat-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-lift);
-}
-.stat-label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 0.6rem;
-}
-.stat-value {
-    font-family: 'Sora', sans-serif;
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    background: var(--grad-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    line-height: 1.1;
-}
-.stat-value-sm { font-size: 1.2rem; }
-.stat-unit {
-    margin-top: 0.4rem;
-    font-size: 0.7rem;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: 'JetBrains Mono', monospace;
+function animateNumber(id, target, decimals) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const start = 0;
+    const duration = 900;
+    const t0 = performance.now();
+    function step(now) {
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = start + (target - start) * eased;
+        el.textContent = decimals === 0 ? Math.round(v).toLocaleString() : v.toFixed(decimals);
+        if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
 }
 
-.bar-mini {
-    margin-top: 0.7rem;
-    height: 4px;
-    background: rgba(5, 6, 13, 0.6);
-    border-radius: 2px;
-    overflow: hidden;
-}
-.bar-mini-fill {
-    height: 100%;
-    background: var(--grad-primary);
-    width: 0;
-    border-radius: 2px;
-    transition: width 1.2s var(--ease);
-    box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+function fillBar(el, pct) {
+    if (!el) return;
+    requestAnimationFrame(() => { el.style.width = Math.max(0, Math.min(100, pct)) + '%'; });
 }
 
-.stat-spark {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    margin-top: 0.7rem;
-    height: 24px;
-}
-.stat-spark span {
-    flex: 1;
-    background: var(--grad-primary);
-    border-radius: 1px;
-    opacity: 0.6;
-}
-.stat-spark span:nth-child(1) { height: 35%; }
-.stat-spark span:nth-child(2) { height: 60%; }
-.stat-spark span:nth-child(3) { height: 45%; }
-.stat-spark span:nth-child(4) { height: 80%; }
-.stat-spark span:nth-child(5) { height: 100%; opacity: 1; }
-
-/* CHARTS */
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 1.5rem;
-}
-.chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.6rem;
-    backdrop-filter: blur(10px);
-}
-.chart-title {
-    font-family: 'Sora', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 1.25rem;
-    color: var(--text);
-    letter-spacing: -0.01em;
-}
-.bar-chart {
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-}
-.bar-row {
-    display: grid;
-    grid-template-columns: 90px 1fr 50px;
-    align-items: center;
-    gap: 0.85rem;
-}
-.bar-row-label {
-    font-size: 0.82rem;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-}
-.bar-track {
-    height: 10px;
-    background: rgba(5, 6, 13, 0.6);
-    border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-}
-.bar-fill {
-    height: 100%;
-    background: var(--grad-primary);
-    border-radius: 5px;
-    width: 0;
-    transition: width 1.2s var(--ease);
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
-    position: relative;
-}
-.bar-fill::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0; right: 0;
-    width: 12px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
-}
-.bar-row-value {
-    font-size: 0.85rem;
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    text-align: right;
-    font-weight: 500;
+function renderBarChart(id, data, labels) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+    Object.entries(data).forEach(([key, value], i) => {
+        const pct = (value / total) * 100;
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+            <div class="bar-row-label">${labels[key] || key}</div>
+            <div class="bar-track"><div class="bar-fill" data-fill="${pct}"></div></div>
+            <div class="bar-row-value">${value}</div>`;
+        el.appendChild(row);
+        setTimeout(() => {
+            row.querySelector('.bar-fill').style.width = pct + '%';
+        }, 100 + i * 80);
+    });
 }
 
 /* ============================================================================
    BATTLE
    ============================================================================ */
-.battle-shell {
-    background: var(--surface-strong);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    grid-template-areas:
-        "song1 vs song2"
-        "btn btn btn";
-    gap: 1.25rem;
-    align-items: end;
-    backdrop-filter: blur(20px);
-    box-shadow: var(--shadow-glow);
-}
-.battle-input-group:nth-of-type(1) { grid-area: song1; }
-.battle-input-group:nth-of-type(2) { grid-area: song2; }
-.battle-vs {
-    grid-area: vs;
-    font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: 1.5rem;
-    background: var(--grad-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    align-self: end;
-    padding-bottom: 0.8rem;
-}
-#battleBtn { grid-area: btn; }
+function populateBattleSelects() {
+    const a = document.getElementById('song1');
+    const b = document.getElementById('song2');
+    if (!a || !b) return;
+    // deduplicate by id
+    const seen = new Set();
+    const uniq = state.songs.filter(s => seen.has(s.id) ? false : seen.add(s.id));
+    uniq.sort((x, y) => x.title.localeCompare(y.title));
 
-.battle-input-group label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 0.55rem;
+    const opts = uniq.map(s => `<option value="${s.id}">${escapeHtml(s.title)} — ${escapeHtml(s.artist)}</option>`).join('');
+    a.innerHTML = `<option value="">Select song…</option>${opts}`;
+    b.innerHTML = `<option value="">Select song…</option>${opts}`;
 }
-.select-input {
-    width: 100%;
-    padding: 0.85rem 1rem;
-    background: rgba(5, 6, 13, 0.6);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 0.92rem;
-    color: var(--text);
-    outline: none;
-    transition: all var(--t-fast);
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300e5ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    padding-right: 2.5rem;
-}
-.select-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15); }
-.select-input option { background: var(--bg-1); color: var(--text); }
 
-.battle-results {
-    margin-top: 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    backdrop-filter: blur(10px);
-    animation: fadeUp 0.5s var(--ease) both;
+async function handleBattle() {
+    const id1 = parseInt(document.getElementById('song1').value, 10);
+    const id2 = parseInt(document.getElementById('song2').value, 10);
+    if (!id1 || !id2) { toast('Pick two tracks to battle'); return; }
+    if (id1 === id2) { toast('Pick two different tracks'); return; }
+
+    const result = await api('/api/battle', 'POST', { song1_id: id1, song2_id: id2 });
+    if (!result) { toast('Battle failed — try again'); return; }
+    renderBattle(result);
 }
-.battle-winner {
-    text-align: center;
-    margin-bottom: 1.75rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
+
+function renderBattle(r) {
+    const wrap = document.getElementById('battleResults');
+    if (!wrap) return;
+    const s1 = r.song1 || {};
+    const s2 = r.song2 || {};
+    const winner = r.winner || {};
+    const winnerIs1 = winner.id === s1.id;
+
+    wrap.innerHTML = `
+        <div class="battle-winner">
+            <div class="battle-winner-label">Winner</div>
+            <div class="battle-winner-name">${escapeHtml(winner.title || '—')} ${winner.artist ? '· ' + escapeHtml(winner.artist) : ''}</div>
+        </div>
+        <div class="battle-comparison">
+            ${battleSide(s1, winnerIs1)}
+            ${battleSide(s2, !winnerIs1)}
+        </div>`;
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
-.battle-winner-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    color: var(--cyan);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 0.5rem;
-}
-.battle-winner-name {
-    font-family: 'Sora', sans-serif;
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    background: var(--grad-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.battle-comparison {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-.battle-side {
-    background: rgba(5, 6, 13, 0.4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-}
-.battle-side.winner { border-color: var(--cyan); box-shadow: 0 0 24px rgba(0, 229, 255, 0.2); }
-.battle-side-title {
-    font-family: 'Sora', sans-serif;
-    font-weight: 600;
-    margin-bottom: 0.85rem;
-    font-size: 1rem;
-}
-.battle-side-features {
-    display: grid;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    font-family: 'JetBrains Mono', monospace;
-}
-.battle-feature-row {
-    display: flex;
-    justify-content: space-between;
-    color: var(--text-dim);
+
+function battleSide(s, isWinner) {
+    return `
+        <div class="battle-side ${isWinner ? 'winner' : ''}">
+            <div class="battle-side-title">${escapeHtml(s.title || '—')}<br><span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">${escapeHtml(s.artist || '')}</span></div>
+            <div class="battle-side-features">
+                <div class="battle-feature-row"><span>Energy</span><span>${(s.energy ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Dance</span><span>${(s.danceability ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Tempo</span><span>${s.tempo ?? 0} BPM</span></div>
+                <div class="battle-feature-row"><span>Popularity</span><span>${s.popularity ?? 0}</span></div>
+            </div>
+        </div>`;
 }
 
 /* ============================================================================
-   ABOUT
+   UTIL
    ============================================================================ */
-.about-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 3rem;
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
 }
-.about-body p {
-    color: var(--text-dim);
-    margin-bottom: 1rem;
-    line-height: 1.7;
-}
-.about-body strong { color: var(--text); font-weight: 600; }
-
-/* ============================================================================
-   FOOTER
-   ============================================================================ */
-.footer {
-    padding: 3rem 0;
-    border-top: 1px solid var(--border);
-    margin-top: 4rem;
-}
-.footer-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-.footer-meta {
-    color: var(--text-faint);
-    font-size: 0.82rem;
-    font-family: 'JetBrains Mono', monospace;
-}
-
-/* ============================================================================
-   EMPTY STATE
-   ============================================================================ */
-.empty-state {
-    padding: 3rem 1rem;
-    text-align: center;
-    color: var(--text-muted);
-    background: var(--surface);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-}
-.empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.7; }
-.empty-state p { font-size: 0.95rem; }
-
-/* ============================================================================
-   TOAST (inline messages)
-   ============================================================================ */
-.toast {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--surface-strong);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-pill);
-    padding: 0.8rem 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text);
-    box-shadow: var(--shadow-glow);
-    backdrop-filter: blur(20px);
-    z-index: 100;
-    opacity: 0;
-    transition: all var(--t-med);
-    pointer-events: none;
-}
-.toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* ============================================================================
-   LOADER
-   ============================================================================ */
-.loader {
-    position: fixed;
-    top: 1.25rem; right: 1.25rem;
-    width: 36px; height: 36px;
-    display: grid; place-items: center;
-    z-index: 200;
-}
-.loader-orb {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--grad-primary);
-    box-shadow: 0 0 20px var(--cyan);
-    animation: loaderPulse 1s ease-in-out infinite;
-}
-@keyframes loaderPulse {
-    0%, 100% { transform: scale(0.8); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 1; }
-}
-
-/* ============================================================================
-   RESPONSIVE
-   ============================================================================ */
-@media (max-width: 860px) {
-    .nav-links { display: none; }
-    .hero { padding: 4rem 0 3rem; }
-    .section { padding: 4rem 0; }
-    .about-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-    .battle-shell {
-        grid-template-columns: 1fr;
-        grid-template-areas: "song1" "vs" "song2" "btn";
-    }
-    .battle-vs { padding-bottom: 0; text-align: center; }
-    .battle-comparison { grid-template-columns: 1fr; }
-    .search-shell { padding-left: 1rem; }
-    .search-shell .btn span { display: none; }
-    .search-shell .btn { padding: 0.85rem; }
-}
-
-@media (max-width: 480px) {
-    .container { padding: 0 1rem; }
-    .hero-visual { height: 180px; gap: 1.5rem; }
-    .orb { transform: scale(0.85); }
-    .nav-pill { display: none; }
-    .results-grid, .rec-grid { grid-template-columns: 1fr; }
-    .mood-grid { grid-template-columns: repeat(2, 1fr); }
-    .stat-grid { grid-template-columns: repeat(2, 1fr); }
-    .stat-value { font-size: 1.6rem; }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* ============================================================================
-   POLISH & UX IMPROVEMENTS
-   Enhanced hover effects, nav styling, spacing, and mood filtering
-   ============================================================================ */
-
-/* NAV IMPROVEMENTS */
-.nav-links {
-    display: flex;
-    gap: 1.5rem;
-}
-
-.nav-link {
-    position: relative;
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    color: var(--text-dim);
-    transition: color var(--t-fast);
-    font-weight: 500;
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 1rem;
-    width: calc(100% - 2rem);
-    height: 2px;
-    background: var(--grad-primary);
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform var(--t-fast);
-    opacity: 0;
-}
-
-.nav-link:hover {
-    color: var(--cyan);
-}
-
-.nav-link:hover::after,
-.nav-link.active::after {
-    transform: scaleX(1);
-    transform-origin: left;
-    opacity: 1;
-}
-
-.nav-link.active {
-    color: var(--cyan);
-}
-
-/* HOVER EFFECTS - Cards */
-.mood-card,
-.result-card,
-.stat-card,
-.chart-card,
-.rec-card {
-    position: relative;
-    transition: all var(--t-med);
-    overflow: hidden;
-}
-
-.mood-card:hover,
-.result-card:hover,
-.chart-card:hover,
-.rec-card:hover {
-    transform: translateY(-8px);
-    border-color: var(--cyan);
-    box-shadow: 0 24px 64px rgba(0, 229, 255, 0.25), var(--shadow-glow);
-}
-
-.stat-card:hover {
-    border-color: var(--purple);
-    box-shadow: 0 24px 64px rgba(162, 107, 255, 0.2), var(--shadow-glow);
-}
-
-/* BUTTON HOVER EFFECTS */
-.btn {
-    position: relative;
-    transition: all var(--t-med);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-        rgba(255, 255, 255, 0.2) 0%, transparent 80%);
-    opacity: 0;
-    transition: opacity var(--t-fast);
-    border-radius: inherit;
-}
-
-.btn:hover::before {
-    opacity: 1;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 48px rgba(0, 229, 255, 0.3), var(--shadow-glow);
-}
-
-.btn-secondary:hover {
-    border-color: var(--cyan);
-    color: var(--cyan);
-    box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.1);
-}
-
-/* MOOD CARD PREMIUM HOVER */
-.mood-card {
-    border: 2px solid var(--border);
-}
-
-.mood-card:hover {
-    background: var(--surface-strong);
-    border-color: var(--cyan);
-}
-
-.mood-card:hover .mood-name {
-    color: var(--cyan);
-}
-
-/* MOOD FILTER RESULTS SECTION */
-.mood-filter-results {
-    margin-top: 3rem;
-    padding: 2.5rem;
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(162, 107, 255, 0.04));
-    border: 2px solid var(--border-strong);
-    border-radius: var(--radius-lg);
-    animation: slideUp 0.5s var(--ease);
-}
-
-.mood-results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    gap: 1.5rem;
-}
-
-.mood-results-header h3 {
-    font-size: 1.3rem;
-    color: var(--cyan);
-    margin: 0;
-}
-
-.mood-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-}
-
-.mood-song-card {
-    padding: 1.5rem;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    transition: all var(--t-med);
-}
-
-.mood-song-card:hover {
-    border-color: var(--green);
-    background: var(--surface-strong);
-    transform: translateY(-6px);
-    box-shadow: 0 20px 48px rgba(77, 255, 179, 0.15), var(--shadow-glow);
-}
-
-.mood-song-card h4 {
-    font-size: 1.1rem;
-    margin-bottom: 0.3rem;
-    color: var(--cyan);
-}
-
-.mood-song-card p {
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.mood-song-metrics {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
-}
-
-.mood-metric {
-    padding: 0.7rem;
-    background: rgba(0, 229, 255, 0.06);
-    border-left: 3px solid var(--cyan);
-    border-radius: 6px;
-}
-
-.mood-metric-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-bottom: 0.3rem;
-}
-
-.mood-metric-value {
-    font-size: 1.1rem;
-    color: var(--cyan);
-    font-weight: 600;
-}
-
-/* SPACING IMPROVEMENTS */
-.section-header {
-    margin-bottom: 3rem;
-    text-align: center;
-}
-
-.section-header h2 {
-    font-size: 2rem;
-    margin-bottom: 0.8rem;
-    background: var(--grad-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.section-subtext {
-    color: var(--text-muted);
-    font-size: 1rem;
-    margin: 0;
-}
-
-/* Improve section spacing */
-.moods-section,
-.dashboard-section,
-.battle-section {
-    padding: 4rem 0;
-    border-top: 1px solid var(--border);
-}
-
-.moods-section:first-of-type {
-    padding-top: 5rem;
-    border-top: none;
-}
-
-/* SMOOTH TRANSITIONS */
-main section {
-    animation: fadeIn 0.6s var(--ease) forwards;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* INPUT FOCUS STATES */
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="number"]:focus,
-select:focus {
-    outline: none;
-    border-color: var(--cyan);
-    box-shadow: inset 0 0 0 1px var(--cyan), 0 0 20px rgba(0, 229, 255, 0.2);
-}
-
-/* MOBILE RESPONSIVE */
-@media (max-width: 768px) {
-    .nav-links {
-        gap: 0.8rem;
-    }
-
-    .nav-link {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.85rem;
-    }
-
-    .mood-filter-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-    }
-
-    .mood-results-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .mood-results-header button {
-        width: 100%;
-    }
-
-    .section-header h2 {
-        font-size: 1.5rem;
-    }
-
-    .section-subtext {
-        font-size: 0.9rem;
-    }
-
-    .moods-section,
-    .dashboard-section,
-    .battle-section {
-        padding: 2.5rem 0;
-    }
-}
-
