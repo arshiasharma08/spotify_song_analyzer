@@ -811,7 +811,114 @@ main {
     font-weight: 700;
 }
 
-/* MOODS SHOWCASE */
+/* INLINE MESSAGES - Replace alert popups */
+.inline-message {
+    background: rgba(163, 102, 255, 0.1);
+    border: 2px solid var(--accent-purple);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    animation: slideUp 0.4s ease-out;
+}
+
+.inline-message-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 500px;
+}
+
+.inline-message-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.inline-message-icon {
+    font-size: 2.5rem;
+}
+
+.inline-message-text {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.inline-message-subtext {
+    font-size: 0.95rem;
+    color: var(--text-tertiary);
+}
+
+/* Info message (default) */
+.inline-message-info {
+    background: rgba(163, 102, 255, 0.1);
+    border-color: var(--accent-purple);
+}
+
+.inline-message-info .inline-message-icon {
+    color: var(--accent-purple);
+}
+
+/* Warning message */
+.inline-message-warning {
+    background: rgba(255, 214, 0, 0.1);
+    border-color: #ffd600;
+}
+
+.inline-message-warning .inline-message-icon {
+    color: #ffd600;
+}
+
+/* Error message */
+.inline-message-error {
+    background: rgba(255, 0, 110, 0.1);
+    border-color: var(--accent-pink);
+}
+
+.inline-message-error .inline-message-icon {
+    color: var(--accent-pink);
+}
+
+.inline-message-error .inline-message-text {
+    color: #ffb3d9;
+}
+
+/* Success message */
+.inline-message-success {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: var(--accent-green);
+}
+
+.inline-message-success .inline-message-icon {
+    color: var(--accent-green);
+}
+
+.inline-message-success .inline-message-text {
+    color: var(--accent-green);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .inline-message {
+        padding: 1.5rem;
+        min-height: 120px;
+    }
+
+    .inline-message-icon {
+        font-size: 2rem;
+    }
+
+    .inline-message-text {
+        font-size: 1rem;
+    }
+}
+
+
 .moods-showcase-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
