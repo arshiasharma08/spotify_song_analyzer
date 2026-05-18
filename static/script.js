@@ -207,10 +207,25 @@ function buildResultCard(song, i = 0) {
         <p>${escapeHtml(song.artist)}</p>
 
         <div class="metrics-row">
-            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
-            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
-            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
-            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
+            <div class="metric">
+                <div class="metric-label">Energy</div>
+                <div class="metric-value">${song.energy.toFixed(2)}</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-label">Dance</div>
+                <div class="metric-value">${song.danceability.toFixed(2)}</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-label">Tempo</div>
+                <div class="metric-value">${song.tempo}</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-label">Pop</div>
+                <div class="metric-value">${song.popularity}</div>
+            </div>
         </div>
 
         ${song.spotify_url ? `
@@ -225,6 +240,7 @@ function buildResultCard(song, i = 0) {
     `;
 
     card.addEventListener('click', () => selectSong(song));
+
     return card;
 }
 
