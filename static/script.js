@@ -1,6 +1,6 @@
 /* ============================================================================
-   AUDIO INTELLIGENCE PLATFORM - ENHANCED JAVASCRIPT
-   3D Background, Mood Filtering, Interactive Features
+   AUDIO INTELLIGENCE PLATFORM - FIXED JAVASCRIPT
+   All functionality restored with debugging
    ============================================================================ */
 
 // STATE MANAGEMENT
@@ -12,18 +12,22 @@ const state = {
     analytics: null
 };
 
-// INITIALIZATION
+// INITIALIZATION - ALL EVENT LISTENERS INSIDE DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎵 Audio Intelligence Platform initializing...');
     
     // Initialize 3D background
     init3D();
     
-    // Setup event listeners
+    // Setup event listeners FIRST
+    console.log('📌 Setting up event listeners...');
     setupListeners();
     
     // Load initial data
+    console.log('📊 Loading initial data...');
     loadInitialData();
+    
+    console.log('✓ Platform ready');
 });
 
 /* ============================================================================
@@ -37,7 +41,10 @@ function init3D() {
     
     try {
         const canvas = document.getElementById('canvas-3d');
-        if (!canvas) return;
+        if (!canvas) {
+            console.warn('Canvas not found');
+            return;
+        }
 
         // Scene setup
         const width = window.innerWidth;
@@ -138,28 +145,61 @@ function init3D() {
 }
 
 /* ============================================================================
-   EVENT LISTENERS
+   EVENT LISTENERS - INSIDE DOMContentLoaded
    ============================================================================ */
 
 function setupListeners() {
-    console.log('📌 Setting up event listeners...');
-    
-    // Search
-    document.getElementById('searchBtn').addEventListener('click', handleSearch);
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSearch();
-    });
+    // Search button
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+        console.log('✓ Found searchBtn');
+        searchBtn.addEventListener('click', () => {
+            console.log('🔍 SEARCH BUTTON CLICKED');
+            handleSearch();
+        });
+    } else {
+        console.error('❌ searchBtn not found');
+    }
 
-    // Battle
-    document.getElementById('battleBtn').addEventListener('click', handleBattle);
+    // Search input Enter key
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        console.log('✓ Found searchInput');
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                console.log('🔍 SEARCH INPUT ENTER PRESSED');
+                handleSearch();
+            }
+        });
+    } else {
+        console.error('❌ searchInput not found');
+    }
+
+    // Battle button
+    const battleBtn = document.getElementById('battleBtn');
+    if (battleBtn) {
+        console.log('✓ Found battleBtn');
+        battleBtn.addEventListener('click', () => {
+            console.log('⚔️ BATTLE BUTTON CLICKED');
+            handleBattle();
+        });
+    } else {
+        console.error('❌ battleBtn not found');
+    }
 
     // Clear mood filter
     const clearBtn = document.getElementById('clearMoodBtn');
     if (clearBtn) {
-        clearBtn.addEventListener('click', clearMoodFilter);
+        console.log('✓ Found clearMoodBtn');
+        clearBtn.addEventListener('click', () => {
+            console.log('🔄 CLEAR MOOD FILTER CLICKED');
+            clearMoodFilter();
+        });
+    } else {
+        console.warn('clearMoodBtn not found (will be added dynamically)');
     }
 
-    console.log('✓ Event listeners ready');
+    console.log('✓ Event listeners setup complete');
 }
 
 /* ============================================================================
@@ -167,7 +207,7 @@ function setupListeners() {
    ============================================================================ */
 
 async function loadInitialData() {
-    console.log('📊 Loading initial data...');
+    console.log('📊 Loading moods and analytics...');
     
     // Load moods (gets all songs)
     await loadMoods();
@@ -183,6 +223,7 @@ async function loadInitialData() {
 async function callAPI(endpoint, method = 'GET', data = null) {
     try {
         showLoading(true);
+        console.log(`📡 API Call: ${method} ${endpoint}`, data);
         
         const options = {
             method: method,
@@ -195,10 +236,11 @@ async function callAPI(endpoint, method = 'GET', data = null) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const result = await response.json();
+        console.log(`✓ API Success: ${endpoint}`, result);
         return result;
         
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('❌ API Error:', error);
         return null;
     } finally {
         showLoading(false);
@@ -210,6 +252,7 @@ function showLoading(show) {
     if (loader) {
         if (show) {
             loader.classList.remove('hidden');
+            console.log('⏳ Loading...');
         } else {
             loader.classList.add('hidden');
         }
@@ -221,38 +264,59 @@ function showLoading(show) {
    ============================================================================ */
 
 async function handleSearch() {
+    console.log('🔍 handleSearch called');
+    
     const input = document.getElementById('searchInput');
+    if (!input) {
+        console.error('❌ searchInput element not found');
+        return;
+    }
+    
     const query = input.value.trim();
+    console.log(`Searching for: "${query}"`);
     
     if (!query || query.length < 2) {
-        alert('Please enter at least 2 characters');
+        console.warn('⚠️ Query too short');
+        showInlineMessage('Please enter at least 2 characters', 'warning');
         return;
     }
 
-    console.log(`🔍 Searching: "${query}"`);
-    
+    console.log(`📡 Calling /api/search with query: "${query}"`);
     const result = await callAPI('/api/search', 'POST', { query });
+    
     if (!result || !result.results) {
-        alert('Search failed');
+        console.error('❌ Search failed - no results');
+        showInlineMessage('Search failed. Please try again.', 'error');
         return;
     }
 
+    console.log(`✓ Got ${result.results.length} results`);
     displaySearchResults(result.results);
 }
 
 function displaySearchResults(results) {
+    console.log(`📊 displaySearchResults with ${results.length} items`);
+    
     const container = document.getElementById('resultsList');
     const section = document.getElementById('searchResults');
+    
+    if (!container || !section) {
+        console.error('❌ resultsList or searchResults element not found');
+        return;
+    }
     
     container.innerHTML = '';
     
     if (results.length === 0) {
+        console.warn('No results to display');
         container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.6);">No songs found</p>';
         section.classList.remove('hidden');
         return;
     }
 
     results.forEach((song, idx) => {
+        console.log(`Adding result: ${song.title} by ${song.artist}`);
+        
         const card = document.createElement('div');
         card.className = 'result-card';
         card.style.animationDelay = `${idx * 50}ms`;
@@ -280,10 +344,15 @@ function displaySearchResults(results) {
             </div>
         `;
         
-        card.addEventListener('click', () => selectSong(song));
+        card.addEventListener('click', () => {
+            console.log(`🎵 Clicked song: ${song.title}`);
+            selectSong(song);
+        });
+        
         container.appendChild(card);
     });
 
+    console.log('✓ Results displayed, removing hidden class');
     section.classList.remove('hidden');
 }
 
@@ -292,44 +361,54 @@ function displaySearchResults(results) {
    ============================================================================ */
 
 async function selectSong(song) {
-    console.log(`✓ Selected: ${song.title}`);
+    console.log(`✓ selectSong: ${song.title} (ID: ${song.id})`);
     
     state.selectedSong = song;
     state.selectedMood = null;
     
     // Clear mood filter
-    document.querySelectorAll('.mood-card').forEach(m => m.classList.remove('active'));
-    document.getElementById('clearMoodBtn')?.classList.add('hidden');
-    document.querySelector('.mood-summary')?.classList.add('hidden');
+    document.querySelectorAll('.mood-card').forEach(m => {
+        m.classList.remove('active');
+        console.log('Removed active class from mood card');
+    });
+    const clearBtn = document.getElementById('clearMoodBtn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    const summary = document.querySelector('.mood-summary');
+    if (summary) summary.classList.add('hidden');
     
     // Display selected song
     const card = document.getElementById('selectedSongCard');
-    card.innerHTML = `
-        <h3 class="song-title">${escapeHtml(song.title)}</h3>
-        <p class="song-artist">${escapeHtml(song.artist)}</p>
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-item-label">Energy</div>
-                <div class="info-item-value">${song.energy.toFixed(2)}</div>
+    if (card) {
+        card.innerHTML = `
+            <h3 class="song-title">${escapeHtml(song.title)}</h3>
+            <p class="song-artist">${escapeHtml(song.artist)}</p>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-item-label">Energy</div>
+                    <div class="info-item-value">${song.energy.toFixed(2)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-label">Danceability</div>
+                    <div class="info-item-value">${song.danceability.toFixed(2)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-label">Tempo</div>
+                    <div class="info-item-value">${song.tempo} BPM</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-label">Popularity</div>
+                    <div class="info-item-value">${song.popularity}</div>
+                </div>
             </div>
-            <div class="info-item">
-                <div class="info-item-label">Danceability</div>
-                <div class="info-item-value">${song.danceability.toFixed(2)}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-item-label">Tempo</div>
-                <div class="info-item-value">${song.tempo} BPM</div>
-            </div>
-            <div class="info-item">
-                <div class="info-item-label">Popularity</div>
-                <div class="info-item-value">${song.popularity}</div>
-            </div>
-        </div>
-    `;
-    document.getElementById('selectedSongSection').classList.remove('hidden');
-
-    // Show mood section
-    document.getElementById('moodSection').classList.remove('hidden');
+        `;
+        console.log('✓ Updated selectedSongCard');
+    }
+    
+    const section = document.getElementById('selectedSongSection');
+    if (section) {
+        section.classList.remove('hidden');
+        console.log('✓ Showing selectedSongSection');
+    }
 
     // Get recommendations
     await getRecommendations(song.id);
@@ -342,21 +421,34 @@ async function selectSong(song) {
 }
 
 async function getRecommendations(songId) {
+    console.log(`📎 Getting recommendations for song ${songId}`);
+    
     const result = await callAPI('/api/recommend', 'POST', {
         song_id: songId,
         count: 5
     });
     
-    if (!result || !result.recommendations) return;
+    if (!result || !result.recommendations) {
+        console.error('❌ No recommendations returned');
+        return;
+    }
     
+    console.log(`✓ Got ${result.recommendations.length} recommendations`);
     state.currentRecommendations = result.recommendations;
     displayRecommendations(result.recommendations);
 }
 
 function displayRecommendations(recs) {
+    console.log(`📊 displayRecommendations with ${recs.length} items`);
+    
     const container = document.getElementById('recommendationsGrid');
     const section = document.getElementById('recommendationsSection');
     const subtitle = document.getElementById('recSubtitle');
+    
+    if (!container || !section) {
+        console.error('❌ recommendationsGrid or recommendationsSection not found');
+        return;
+    }
     
     container.innerHTML = '';
     
@@ -369,6 +461,8 @@ function displayRecommendations(recs) {
     recs.forEach((rec, idx) => {
         const confidence = Math.round(rec.similarity_score * 100);
         const reason = getRecommendationReason(confidence);
+        
+        console.log(`Adding recommendation: ${rec.title} (${confidence}%)`);
         
         const card = document.createElement('div');
         card.className = 'rec-card';
@@ -404,6 +498,7 @@ function displayRecommendations(recs) {
     });
 
     section.classList.remove('hidden');
+    console.log('✓ Recommendations displayed');
     
     // Smooth scroll
     setTimeout(() => {
@@ -420,10 +515,22 @@ function getRecommendationReason(confidence) {
 }
 
 async function getInsights(songId) {
+    console.log(`💡 Getting insights for song ${songId}`);
+    
     const result = await callAPI('/api/insights', 'POST', { song_id: songId });
-    if (!result || !result.insights) return;
+    if (!result || !result.insights) {
+        console.warn('⚠️ No insights returned');
+        return;
+    }
+    
+    console.log(`✓ Got ${result.insights.length} insights`);
     
     const container = document.getElementById('insightsList');
+    if (!container) {
+        console.error('❌ insightsList not found');
+        return;
+    }
+    
     container.innerHTML = '';
     
     result.insights.forEach((insight, idx) => {
@@ -434,7 +541,11 @@ async function getInsights(songId) {
         container.appendChild(item);
     });
     
-    document.getElementById('insightsSection').classList.remove('hidden');
+    const section = document.getElementById('insightsSection');
+    if (section) {
+        section.classList.remove('hidden');
+        console.log('✓ Insights displayed');
+    }
 }
 
 /* ============================================================================
@@ -442,17 +553,30 @@ async function getInsights(songId) {
    ============================================================================ */
 
 async function loadMoods() {
+    console.log('🎭 loadMoods called');
+    
     const result = await callAPI('/api/moods', 'GET');
-    if (!result || !result.moods) return;
+    if (!result || !result.moods) {
+        console.error('❌ No moods returned');
+        return;
+    }
+    
+    console.log(`✓ Got moods data`);
     
     // Extract all songs
     state.songs = [];
     Object.values(result.moods).forEach(songs => {
         state.songs.push(...songs);
     });
+    console.log(`✓ Loaded ${state.songs.length} total songs`);
 
     // Display mood cards
     const container = document.getElementById('moodGrid');
+    if (!container) {
+        console.error('❌ moodGrid not found');
+        return;
+    }
+    
     container.innerHTML = '';
     
     const moodEmojis = {
@@ -463,6 +587,8 @@ async function loadMoods() {
     };
     
     Object.entries(result.moods).forEach(([mood, songs], idx) => {
+        console.log(`Adding mood card: ${mood} (${songs.length} songs)`);
+        
         const card = document.createElement('div');
         card.className = 'mood-card';
         card.style.animationDelay = `${idx * 50}ms`;
@@ -474,52 +600,68 @@ async function loadMoods() {
             <div class="mood-count">${songs.length} songs</div>
         `;
         
-        card.addEventListener('click', () => filterByMood(mood, result.moods));
+        card.addEventListener('click', () => {
+            console.log(`🎭 MOOD CARD CLICKED: ${mood}`);
+            filterByMood(mood, result.moods);
+        });
+        
         container.appendChild(card);
     });
+    
+    console.log('✓ Mood cards displayed');
 
     // Display moods showcase
     const showcase = document.getElementById('moodsShowcaseGrid');
-    showcase.innerHTML = '';
-    
-    Object.entries(result.moods).forEach(([mood, songs]) => {
-        const card = document.createElement('div');
-        card.className = 'mood-showcase-card';
+    if (showcase) {
+        showcase.innerHTML = '';
         
-        const emoji = moodEmojis[mood] || '🎵';
-        card.innerHTML = `
-            <div class="mood-large-emoji">${emoji}</div>
-            <h4 class="mood-showcase-name">${escapeHtml(mood)}</h4>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">${songs.length} songs in collection</p>
-        `;
+        Object.entries(result.moods).forEach(([mood, songs]) => {
+            const card = document.createElement('div');
+            card.className = 'mood-showcase-card';
+            
+            const emoji = moodEmojis[mood] || '🎵';
+            card.innerHTML = `
+                <div class="mood-large-emoji">${emoji}</div>
+                <h4 class="mood-showcase-name">${escapeHtml(mood)}</h4>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">${songs.length} songs in collection</p>
+            `;
+            
+            showcase.appendChild(card);
+        });
         
-        showcase.appendChild(card);
-    });
-
-    document.getElementById('moodsShowcaseSection').classList.remove('hidden');
+        console.log('✓ Mood showcase displayed');
+    }
 }
 
 function filterByMood(mood, allMoods) {
-    console.log(`🎭 Filtering by: ${mood}`);
+    console.log(`🎭 filterByMood: ${mood}`);
     
     state.selectedMood = mood;
     
     // Update UI
     document.querySelectorAll('.mood-card').forEach(card => {
-        if (card.querySelector('.mood-name').textContent.trim() === mood) {
+        const name = card.querySelector('.mood-name');
+        if (name && name.textContent.trim() === mood) {
             card.classList.add('active');
+            console.log(`✓ Highlighted ${mood}`);
         } else {
             card.classList.remove('active');
         }
     });
     
-    document.getElementById('clearMoodBtn').classList.remove('hidden');
+    const clearBtn = document.getElementById('clearMoodBtn');
+    if (clearBtn) {
+        clearBtn.classList.remove('hidden');
+        console.log('✓ Showing clear button');
+    }
     
     // Filter recommendations
     const filtered = state.currentRecommendations.filter(rec => rec.mood === mood);
+    console.log(`Filtered to ${filtered.length} recommendations`);
     
     if (filtered.length === 0) {
-        alert(`No recommendations found for "${mood}" mood`);
+        console.warn(`No recommendations for ${mood}`);
+        displayNoRecommendationsMessage(mood);
         return;
     }
     
@@ -528,13 +670,14 @@ function filterByMood(mood, allMoods) {
     if (summary) {
         summary.innerHTML = `Filtering recommendations by <strong>${mood}</strong> mood (${filtered.length} songs)`;
         summary.classList.remove('hidden');
+        console.log('✓ Showing mood summary');
     }
     
     displayRecommendations(filtered);
 }
 
 function clearMoodFilter() {
-    console.log('🔄 Clearing mood filter');
+    console.log('🔄 clearMoodFilter called');
     
     state.selectedMood = null;
     
@@ -542,10 +685,20 @@ function clearMoodFilter() {
         card.classList.remove('active');
     });
     
-    document.getElementById('clearMoodBtn').classList.add('hidden');
-    document.querySelector('.mood-summary')?.classList.add('hidden');
+    const clearBtn = document.getElementById('clearMoodBtn');
+    if (clearBtn) {
+        clearBtn.classList.add('hidden');
+        console.log('✓ Hiding clear button');
+    }
+    
+    const summary = document.querySelector('.mood-summary');
+    if (summary) {
+        summary.classList.add('hidden');
+        console.log('✓ Hiding mood summary');
+    }
     
     if (state.currentRecommendations.length > 0) {
+        console.log('✓ Showing all recommendations');
         displayRecommendations(state.currentRecommendations);
     }
 }
@@ -555,11 +708,20 @@ function clearMoodFilter() {
    ============================================================================ */
 
 function populateBattle() {
+    console.log('⚔️ populateBattle called');
+    
     const s1 = document.getElementById('song1');
     const s2 = document.getElementById('song2');
     
+    if (!s1 || !s2) {
+        console.error('❌ song1 or song2 not found');
+        return;
+    }
+    
     s1.innerHTML = '<option value="">Select song...</option>';
     s2.innerHTML = '<option value="">Select song...</option>';
+    
+    console.log(`Populating with ${state.songs.length} songs`);
     
     state.songs.forEach(song => {
         const o1 = document.createElement('option');
@@ -573,15 +735,28 @@ function populateBattle() {
         s2.appendChild(o2);
     });
     
-    document.getElementById('battleSection').classList.remove('hidden');
+    console.log('✓ Battle dropdowns populated');
 }
 
 async function handleBattle() {
-    const id1 = parseInt(document.getElementById('song1').value);
-    const id2 = parseInt(document.getElementById('song2').value);
+    console.log('⚔️ handleBattle called');
+    
+    const s1 = document.getElementById('song1');
+    const s2 = document.getElementById('song2');
+    
+    if (!s1 || !s2) {
+        console.error('❌ song1 or song2 not found');
+        return;
+    }
+    
+    const id1 = parseInt(s1.value);
+    const id2 = parseInt(s2.value);
+    
+    console.log(`Comparing: ${id1} vs ${id2}`);
     
     if (!id1 || !id2 || id1 === id2) {
-        alert('Select two different songs');
+        console.warn('⚠️ Invalid selection');
+        showInlineMessage('Please select two different songs', 'warning');
         return;
     }
 
@@ -590,9 +765,20 @@ async function handleBattle() {
         song2_id: id2
     });
     
-    if (!result) return;
+    if (!result) {
+        console.error('❌ Battle failed');
+        showInlineMessage('Battle comparison failed. Please try again.', 'error');
+        return;
+    }
+    
+    console.log(`✓ Battle result: ${result.winner}`);
     
     const container = document.getElementById('battleResults');
+    if (!container) {
+        console.error('❌ battleResults not found');
+        return;
+    }
+    
     container.innerHTML = '';
     
     const displayBattleCard = (song, isWinner) => {
@@ -632,6 +818,7 @@ async function handleBattle() {
     displayBattleCard(result.song2, !winner1);
     
     container.classList.remove('hidden');
+    console.log('✓ Battle results displayed');
 }
 
 /* ============================================================================
@@ -639,14 +826,22 @@ async function handleBattle() {
    ============================================================================ */
 
 async function loadAnalytics() {
-    const result = await callAPI('/api/analytics', 'GET');
-    if (!result) return;
+    console.log('📊 loadAnalytics called');
     
+    const result = await callAPI('/api/analytics', 'GET');
+    if (!result) {
+        console.error('❌ No analytics returned');
+        return;
+    }
+    
+    console.log('✓ Got analytics data');
     state.analytics = result;
     displayAnalytics(result);
 }
 
 function displayAnalytics(data) {
+    console.log('📊 displayAnalytics called');
+    
     // Update stat cards with animation
     animateCounter('totalSongs', 0, data.summary.total_songs, 1000);
     animateCounter('avgEnergy', 0, parseFloat(data.summary.avg_energy.toFixed(2)), 1000, 2);
@@ -663,7 +858,11 @@ function displayAnalytics(data) {
         const commonMood = Object.keys(moodCounts).reduce((a, b) => 
             moodCounts[a] > moodCounts[b] ? a : b
         );
-        document.getElementById('commonMood').textContent = commonMood;
+        const elem = document.getElementById('commonMood');
+        if (elem) {
+            elem.textContent = commonMood;
+            console.log(`✓ Updated commonMood: ${commonMood}`);
+        }
     }
     
     // Avg match %
@@ -672,7 +871,11 @@ function displayAnalytics(data) {
             state.currentRecommendations.reduce((sum, r) => sum + r.similarity_score * 100, 0) / 
             state.currentRecommendations.length
         );
-        document.getElementById('avgMatch').textContent = avgMatch + '%';
+        const elem = document.getElementById('avgMatch');
+        if (elem) {
+            elem.textContent = avgMatch + '%';
+            console.log(`✓ Updated avgMatch: ${avgMatch}%`);
+        }
     }
     
     // Dominant tempo
@@ -685,7 +888,11 @@ function displayAnalytics(data) {
         moderate: 'Moderate (90-130)',
         fast: 'Fast (>130)'
     };
-    document.getElementById('dominantTempo').textContent = tempoLabels[dominant] || 'Moderate';
+    const tempoElem = document.getElementById('dominantTempo');
+    if (tempoElem) {
+        tempoElem.textContent = tempoLabels[dominant] || 'Moderate';
+        console.log(`✓ Updated dominantTempo: ${tempoLabels[dominant]}`);
+    }
     
     // Charts
     displayChart('tempoChart', [
@@ -700,11 +907,16 @@ function displayAnalytics(data) {
         { label: 'High (>0.7)', value: data.distributions.energy.high }
     ]);
     
-    document.getElementById('analyticsSection').classList.remove('hidden');
+    console.log('✓ Analytics displayed');
 }
 
 function animateCounter(id, start, end, duration, decimals = 0) {
     const element = document.getElementById(id);
+    if (!element) {
+        console.error(`❌ Element ${id} not found`);
+        return;
+    }
+    
     const increment = (end - start) / (duration / 16);
     let current = start;
     
@@ -725,6 +937,11 @@ function animateCounter(id, start, end, duration, decimals = 0) {
 
 function displayChart(id, data) {
     const container = document.getElementById(id);
+    if (!container) {
+        console.error(`❌ Chart container ${id} not found`);
+        return;
+    }
+    
     container.innerHTML = '';
     
     const maxValue = Math.max(...data.map(d => d.value));
@@ -742,11 +959,99 @@ function displayChart(id, data) {
         
         container.appendChild(bar);
     });
+    
+    console.log(`✓ Chart ${id} displayed`);
 }
 
 /* ============================================================================
    UTILITIES
    ============================================================================ */
+
+/* ============================================================================
+   UTILITIES & INLINE MESSAGES
+   ============================================================================ */
+
+/**
+ * Display inline message in recommendations area
+ * Replaces alert() with styled UI messages
+ */
+function showInlineMessage(message, type = 'info') {
+    console.log(`💬 showInlineMessage: ${type} - ${message}`);
+    
+    const section = document.getElementById('recommendationsSection');
+    if (!section) {
+        console.warn('⚠️ recommendationsSection not found for message');
+        return;
+    }
+    
+    const container = document.getElementById('recommendationsGrid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = `inline-message inline-message-${type}`;
+    
+    let icon = 'ℹ️';
+    if (type === 'warning') icon = '⚠️';
+    if (type === 'error') icon = '❌';
+    if (type === 'success') icon = '✓';
+    
+    messageEl.innerHTML = `
+        <div class="inline-message-content">
+            <span class="inline-message-icon">${icon}</span>
+            <span class="inline-message-text">${escapeHtml(message)}</span>
+        </div>
+    `;
+    
+    container.appendChild(messageEl);
+    
+    if (!section.classList.contains('hidden')) {
+        // Section already visible, no scroll needed
+    } else {
+        section.classList.remove('hidden');
+    }
+}
+
+/**
+ * Display message when no recommendations match selected mood
+ */
+function displayNoRecommendationsMessage(mood) {
+    console.log(`💬 No recommendations for mood: ${mood}`);
+    
+    const section = document.getElementById('recommendationsSection');
+    const container = document.getElementById('recommendationsGrid');
+    
+    if (!section || !container) {
+        console.error('❌ recommendationsSection or grid not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = 'inline-message inline-message-info';
+    
+    messageEl.innerHTML = `
+        <div class="inline-message-content">
+            <span class="inline-message-icon">🎭</span>
+            <div class="inline-message-body">
+                <span class="inline-message-text">
+                    No matching songs found for <strong>${escapeHtml(mood)}</strong> yet.
+                </span>
+                <span class="inline-message-subtext">
+                    Try another mood or search for a different song.
+                </span>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(messageEl);
+    section.classList.remove('hidden');
+    
+    console.log('✓ No recommendations message displayed');
+}
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -754,4 +1059,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('✓ Audio Intelligence Platform ready');
+console.log('✓ Audio Intelligence Platform script loaded');
