@@ -1,5 +1,7 @@
 /* ============================================================================
    SONAR · AI MUSIC INTELLIGENCE — FRONTEND
+   Talks to existing Flask backend (/api/search, /api/recommend, /api/battle,
+   /api/moods, /api/analytics, /api/insights). No backend changes.
    ============================================================================ */
 
 const state = {
@@ -11,34 +13,31 @@ const state = {
 };
 
 const MOOD_EMOJI = {
-    'Gym Energy': '💪',
-    'Party Vibes': '🎉',
-    'Energetic': '⚡',
-    'Feel-Good': '😊',
-    'Study Session': '📚',
-    'Chilled': '❄️',
-    'Summer Vibes': '☀️',
-    'Late Night': '🌙',
-    'Melancholy': '🌧️',
+    'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
+    'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
+    'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '🌧️',
     'Focus Mode': '🎯',
-    'Balanced': '🎵',
 };
 
+/* ============================================================================
+   BOOTSTRAP
+   ============================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Sonar loaded');
     initParticles();
     bindListeners();
     loadInitial();
 });
 
+/* ============================================================================
+   LIGHTWEIGHT PARTICLE CANVAS (no three.js needed)
+   ============================================================================ */
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
-    let w, h;
-    let particles = [];
-    const count = window.innerWidth < 768 ? 30 : 60;
+
+    let w, h, particles = [];
+    const COUNT = window.innerWidth < 768 ? 30 : 60;
 
     function resize() {
         w = canvas.width = window.innerWidth * window.devicePixelRatio;
@@ -46,33 +45,26 @@ function initParticles() {
         canvas.style.width = window.innerWidth + 'px';
         canvas.style.height = window.innerHeight + 'px';
     }
-
     resize();
     window.addEventListener('resize', resize);
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < COUNT; i++) {
         particles.push({
             x: Math.random() * w,
             y: Math.random() * h,
             vx: (Math.random() - 0.5) * 0.3,
             vy: (Math.random() - 0.5) * 0.3,
             r: Math.random() * 1.6 + 0.4,
-            hue: Math.random() > 0.5 ? 190 : 270,
+            hue: Math.random() > 0.5 ? 190 : 270, // cyan-ish or purple
         });
     }
 
     function tick() {
         ctx.clearRect(0, 0, w, h);
-
         particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-
-            if (p.x < 0) p.x = w;
-            if (p.x > w) p.x = 0;
-            if (p.y < 0) p.y = h;
-            if (p.y > h) p.y = 0;
-
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = w; else if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h; else if (p.y > h) p.y = 0;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r * window.devicePixelRatio, 0, Math.PI * 2);
             ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, 0.55)`;
@@ -80,48 +72,31 @@ function initParticles() {
             ctx.shadowColor = `hsla(${p.hue}, 100%, 65%, 0.6)`;
             ctx.fill();
         });
-
         requestAnimationFrame(tick);
     }
-
     tick();
 }
 
+/* ============================================================================
+   EVENT LISTENERS
+   ============================================================================ */
 function bindListeners() {
     const form = document.getElementById('searchForm');
-    if (form) {
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            handleSearch();
-        });
-    }
+    if (form) form.addEventListener('submit', e => { e.preventDefault(); handleSearch(); });
 
     const searchBtn = document.getElementById('searchBtn');
-    if (searchBtn) {
-        searchBtn.addEventListener('click', e => {
-            e.preventDefault();
-            handleSearch();
-        });
-    }
+    if (searchBtn) searchBtn.addEventListener('click', e => { e.preventDefault(); handleSearch(); });
 
     const input = document.getElementById('searchInput');
-    if (input) {
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleSearch();
-            }
-        });
-    }
+    if (input) input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
+    });
 
     document.querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            const query = chip.dataset.query;
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.value = query;
-                handleSearch();
-            }
+            const q = chip.dataset.query;
+            document.getElementById('searchInput').value = q;
+            handleSearch();
         });
     });
 
@@ -132,33 +107,28 @@ function bindListeners() {
     if (clearMood) clearMood.addEventListener('click', clearMoodFilter);
 }
 
+/* ============================================================================
+   INITIAL LOAD
+   ============================================================================ */
 async function loadInitial() {
     await loadMoods();
     await loadAnalytics();
     populateBattleSelects();
 }
 
+/* ============================================================================
+   API
+   ============================================================================ */
 async function api(endpoint, method = 'GET', data = null) {
     showLoading(true);
-
     try {
-        const options = {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-        };
-
-        if (data) options.body = JSON.stringify(data);
-
-        const response = await fetch(endpoint, options);
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('API error:', endpoint, error);
-        toast('Something went wrong. Try again.');
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (data) opts.body = JSON.stringify(data);
+        const res = await fetch(endpoint, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('API error', endpoint, err);
         return null;
     } finally {
         showLoading(false);
@@ -166,194 +136,106 @@ async function api(endpoint, method = 'GET', data = null) {
 }
 
 function showLoading(show) {
-    const loader = document.getElementById('loadingIndicator');
-    if (loader) loader.classList.toggle('hidden', !show);
+    const el = document.getElementById('loadingIndicator');
+    if (el) el.classList.toggle('hidden', !show);
 }
 
+/* ============================================================================
+   TOAST (inline message)
+   ============================================================================ */
 let toastTimer;
-
-function toast(message) {
-    const toastEl = document.getElementById('toast');
-    const toastMsg = document.getElementById('toastMsg');
-
-    if (!toastEl || !toastMsg) {
-        console.log(message);
-        return;
-    }
-
-    toastMsg.textContent = message;
-    toastEl.classList.remove('hidden');
-
-    requestAnimationFrame(() => toastEl.classList.add('show'));
-
+function toast(msg) {
+    const el = document.getElementById('toast');
+    const m = document.getElementById('toastMsg');
+    if (!el || !m) return;
+    m.textContent = msg;
+    el.classList.remove('hidden');
+    requestAnimationFrame(() => el.classList.add('show'));
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
-        toastEl.classList.remove('show');
-        setTimeout(() => toastEl.classList.add('hidden'), 300);
+        el.classList.remove('show');
+        setTimeout(() => el.classList.add('hidden'), 320);
     }, 2600);
 }
 
 /* ============================================================================
    SEARCH
    ============================================================================ */
-
 async function handleSearch() {
     const input = document.getElementById('searchInput');
     const query = (input?.value || '').trim();
-
-    if (query.length < 2) {
-        toast('Type at least 2 characters');
-        return;
-    }
-
-    console.log('Searching:', query);
+    if (query.length < 2) { toast('Type at least 2 characters'); return; }
 
     const result = await api('/api/search', 'POST', { query });
-
-    if (!result || !result.results) {
-        toast('Search failed. Try again.');
-        return;
-    }
+    if (!result || !result.results) { toast('Search failed — please try again'); return; }
 
     renderSearchResults(result.results);
 }
 
 function renderSearchResults(results) {
     const list = document.getElementById('resultsList');
-
-    const section =
-        document.getElementById('searchResults') ||
-        document.getElementById('results');
-
+    const section = document.getElementById('searchResults');
     const count = document.getElementById('resultsCount');
-
     if (!list || !section) return;
 
     list.innerHTML = '';
-
-    if (count) {
-        count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
-    }
+    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
 
     if (results.length === 0) {
         list.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
                 <div class="empty-icon">🔍</div>
                 <p>No tracks matched that search. Try another title or artist.</p>
-            </div>
-        `;
+            </div>`;
         section.classList.remove('hidden');
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
 
-    results.forEach((song, index) => {
-        list.appendChild(buildResultCard(song, index));
-    });
-
+    results.forEach((song, i) => list.appendChild(buildResultCard(song, i)));
     section.classList.remove('hidden');
-
-    setTimeout(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-function buildResultCard(song, index = 0) {
+function buildResultCard(song, i = 0) {
     const card = document.createElement('div');
     card.className = 'result-card';
-    card.style.animationDelay = `${index * 50}ms`;
-
+    card.style.animationDelay = `${i * 50}ms`;
     card.innerHTML = `
         <h4>${escapeHtml(song.title)}</h4>
         <p>${escapeHtml(song.artist)}</p>
-
         <div class="metrics-row">
-            <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-value">${Number(song.energy || 0).toFixed(2)}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Dance</div>
-                <div class="metric-value">${Number(song.danceability || 0).toFixed(2)}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Tempo</div>
-                <div class="metric-value">${song.tempo || 0}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Pop</div>
-                <div class="metric-value">${song.popularity || 0}</div>
-            </div>
-        </div>
-    `;
-
-    card.addEventListener('click', () => {
-        console.log('Song clicked:', song);
-        selectSong(song);
-    });
-
+            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
+            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
+        </div>`;
+    card.addEventListener('click', () => selectSong(song));
     return card;
 }
 
 /* ============================================================================
-   SELECT SONG + SPOTIFY PLAYER
+   SELECT SONG → RECS + INSIGHTS
    ============================================================================ */
-
 async function selectSong(song) {
     state.selectedSong = song;
     state.selectedMood = null;
-
-    document.querySelectorAll('.mood-card.active')
-        .forEach(el => el.classList.remove('active'));
-
+    document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
     document.getElementById('moodFilterResults')?.classList.add('hidden');
 
-    const selectedCard =
-        document.getElementById('selectedSongCard') ||
-        document.getElementById('selectedSongDetail');
-
-    if (selectedCard) {
-        selectedCard.innerHTML = `
+    const card = document.getElementById('selectedSongCard');
+    if (card) {
+        card.innerHTML = `
             <h3 class="song-title">${escapeHtml(song.title)}</h3>
             <p class="song-artist">${escapeHtml(song.artist)}</p>
-
             <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-item-label">Energy</div>
-                    <div class="info-item-value">${Number(song.energy || 0).toFixed(2)}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-item-label">Danceability</div>
-                    <div class="info-item-value">${Number(song.danceability || 0).toFixed(2)}</div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-item-label">Tempo</div>
-                    <div class="info-item-value">
-                        ${song.tempo || 0}
-                        <span style="font-size:0.7em;color:var(--text-muted)">BPM</span>
-                    </div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-item-label">Popularity</div>
-                    <div class="info-item-value">${song.popularity || 0}</div>
-                </div>
-            </div>
-        `;
+                <div class="info-item"><div class="info-item-label">Energy</div><div class="info-item-value">${song.energy.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Danceability</div><div class="info-item-value">${song.danceability.toFixed(2)}</div></div>
+                <div class="info-item"><div class="info-item-label">Tempo</div><div class="info-item-value">${song.tempo} <span style="font-size:0.7em;color:var(--text-muted)">BPM</span></div></div>
+                <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
+            </div>`;
     }
-
-    const selectedSection =
-        document.getElementById('selectedSongSection') ||
-        document.getElementById('song-detail');
-
-    selectedSection?.classList.remove('hidden');
-
-    renderSpotifyPlayer(song);
+    document.getElementById('selectedSongSection')?.classList.remove('hidden');
 
     await Promise.all([
         getRecommendations(song.id),
@@ -361,90 +243,29 @@ async function selectSong(song) {
     ]);
 
     setTimeout(() => {
-        selectedSection?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-        });
+        document.getElementById('selectedSongSection')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
 }
 
-function renderSpotifyPlayer(song) {
-    const player = document.getElementById('spotify-player');
-
-    if (!player) {
-        console.log('Spotify player container missing');
-        return;
-    }
-
-    const trackId = song.spotify_track_id || getSpotifyTrackId(song.spotify_url);
-
-    if (!trackId) {
-        player.classList.remove('hidden');
-        player.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">🎧</div>
-                <p>No Spotify preview available for this track yet.</p>
-            </div>
-        `;
-        return;
-    }
-
-    player.classList.remove('hidden');
-    player.innerHTML = `
-        <iframe
-            style="border-radius:12px"
-            src="https://open.spotify.com/embed/track/${trackId}"
-            width="100%"
-            height="152"
-            frameborder="0"
-            allowfullscreen=""
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy">
-        </iframe>
-    `;
-}
-
-function getSpotifyTrackId(url) {
-    if (!url) return null;
-
-    const match = String(url).match(/track\/([a-zA-Z0-9]+)/);
-    return match ? match[1] : null;
-}
-
-/* ============================================================================
-   RECOMMENDATIONS
-   ============================================================================ */
-
 async function getRecommendations(songId) {
-    const result = await api('/api/recommend', 'POST', {
-        song_id: songId,
-        count: 6,
-    });
-
+    const result = await api('/api/recommend', 'POST', { song_id: songId, count: 6 });
     if (!result || !result.recommendations) return;
-
     renderRecommendations(result.recommendations);
 }
 
-function renderRecommendations(recommendations) {
-    const grid =
-        document.getElementById('recommendationsGrid') ||
-        document.getElementById('recommendationsList');
-
+function renderRecommendations(recs) {
+    const grid = document.getElementById('recommendationsGrid');
     const section = document.getElementById('recommendationsSection');
-
     if (!grid || !section) return;
-
     grid.innerHTML = '';
 
-    recommendations.forEach((rec, index) => {
-        const score = rec.similarity_score ?? rec.similarity ?? 0;
-        const confidence = Math.round(score * 100);
-
+    recs.forEach((rec, i) => {
+        const confidence = Math.round((rec.similarity_score || 0) * 100);
+        const reason = reasonFor(confidence);
         const card = document.createElement('div');
         card.className = 'rec-card';
-        card.style.animationDelay = `${index * 60}ms`;
-
+        card.style.animationDelay = `${i * 60}ms`;
         card.innerHTML = `
             <div class="rec-head">
                 <div>
@@ -453,401 +274,270 @@ function renderRecommendations(recommendations) {
                 </div>
                 <div class="rec-score">${confidence}%</div>
             </div>
-
-            <div class="rec-reason">${reasonFor(confidence)}</div>
-
+            <div class="rec-reason">${reason}</div>
             <div class="rec-features">
-                <div class="rec-feature">
-                    <div class="feature-label">Energy</div>
-                    <div class="feature-value">${Number(rec.energy || 0).toFixed(2)}</div>
-                </div>
-
-                <div class="rec-feature">
-                    <div class="feature-label">Dance</div>
-                    <div class="feature-value">${Number(rec.danceability || 0).toFixed(2)}</div>
-                </div>
-
-                <div class="rec-feature">
-                    <div class="feature-label">Tempo</div>
-                    <div class="feature-value">${rec.tempo || 0}</div>
-                </div>
-
-                <div class="rec-feature">
-                    <div class="feature-label">Pop</div>
-                    <div class="feature-value">${rec.popularity || 0}</div>
-                </div>
+                <div class="rec-feature"><div class="feature-label">Energy</div><div class="feature-value">${rec.energy.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Dance</div><div class="feature-value">${rec.danceability.toFixed(2)}</div></div>
+                <div class="rec-feature"><div class="feature-label">Tempo</div><div class="feature-value">${rec.tempo}</div></div>
+                <div class="rec-feature"><div class="feature-label">Pop</div><div class="feature-value">${rec.popularity}</div></div>
             </div>
-
-            ${rec.mood ? `<span class="rec-mood">${escapeHtml(rec.mood)}</span>` : ''}
-        `;
-
-        card.addEventListener('click', () => selectSong(rec));
-
+            ${rec.mood ? `<span class="rec-mood">${escapeHtml(rec.mood)}</span>` : ''}`;
         grid.appendChild(card);
     });
 
     section.classList.remove('hidden');
 }
 
-function reasonFor(confidence) {
-    if (confidence >= 95) return 'Near-perfect match with a very similar sonic signature.';
-    if (confidence >= 85) return 'Strong match based on energy and danceability.';
-    if (confidence >= 75) return 'Good overlap across multiple audio features.';
-    if (confidence >= 65) return 'Similar overall mood and audio profile.';
-    return 'Recommended based on broad audio similarity.';
+function reasonFor(c) {
+    if (c >= 95) return 'Near-perfect match — almost identical sonic signature.';
+    if (c >= 85) return 'Tight match on energy and danceability.';
+    if (c >= 75) return 'Strong overlap across multiple audio features.';
+    if (c >= 65) return 'Similar overall vibe and mood.';
+    return 'Recommended on broad audio similarity.';
 }
-
-/* ============================================================================
-   INSIGHTS
-   ============================================================================ */
 
 async function getInsights(songId) {
     const result = await api('/api/insights', 'POST', { song_id: songId });
-
     if (!result || !result.insights) return;
-
     const list = document.getElementById('insightsList');
     const section = document.getElementById('insightsSection');
-
     if (!list || !section) return;
-
     list.innerHTML = '';
-
-    result.insights.forEach((text, index) => {
+    result.insights.forEach((text, i) => {
         const item = document.createElement('div');
         item.className = 'insight-item';
-        item.style.animationDelay = `${index * 80}ms`;
+        item.style.animationDelay = `${i * 80}ms`;
         item.textContent = text;
         list.appendChild(item);
     });
-
     section.classList.remove('hidden');
 }
 
 /* ============================================================================
    MOODS
    ============================================================================ */
-
 async function loadMoods() {
     const result = await api('/api/moods', 'GET');
-
     if (!result || !result.moods) return;
 
     state.allMoods = result.moods;
     state.songs = [];
-
-    Object.values(result.moods).forEach(arr => {
-        state.songs.push(...arr);
-    });
+    Object.values(result.moods).forEach(arr => state.songs.push(...arr));
 
     const grid = document.getElementById('moodGrid');
     if (!grid) return;
-
     grid.innerHTML = '';
 
-    Object.entries(result.moods).forEach(([mood, songs], index) => {
+    Object.entries(result.moods).forEach(([mood, songs], i) => {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'mood-card';
-        card.style.animationDelay = `${index * 40}ms`;
-
+        card.style.animationDelay = `${i * 40}ms`;
         card.innerHTML = `
             <div class="mood-emoji">${MOOD_EMOJI[mood] || '🎵'}</div>
             <div class="mood-name">${escapeHtml(mood)}</div>
-            <div class="mood-count">${songs.length} track${songs.length === 1 ? '' : 's'}</div>
-        `;
-
+            <div class="mood-count">${songs.length} track${songs.length === 1 ? '' : 's'}</div>`;
         card.addEventListener('click', () => filterByMood(mood, card));
-
         grid.appendChild(card);
     });
 }
 
 function filterByMood(mood, cardEl) {
-    document.querySelectorAll('.mood-card')
-        .forEach(card => card.classList.remove('active'));
-
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
     cardEl.classList.add('active');
     state.selectedMood = mood;
 
     const songs = state.allMoods[mood] || [];
-
-    const wrapper = document.getElementById('moodFilterResults');
-    const title =
-        document.getElementById('moodFilterTitle') ||
-        document.getElementById('moodResultsTitle');
-
+    const wrap = document.getElementById('moodFilterResults');
+    const title = document.getElementById('moodFilterTitle');
     const meta = document.getElementById('moodFilterMeta');
     const grid = document.getElementById('moodFilterGrid');
     const empty = document.getElementById('moodEmptyState');
+    if (!wrap || !grid) return;
 
-    if (!wrapper || !grid) return;
-
-    if (title) title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
-    if (meta) meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
-
+    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
+    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
     grid.innerHTML = '';
 
     if (songs.length === 0) {
-        if (empty) empty.classList.remove('hidden');
+        empty.classList.remove('hidden');
         grid.classList.add('hidden');
     } else {
-        if (empty) empty.classList.add('hidden');
+        empty.classList.add('hidden');
         grid.classList.remove('hidden');
-
-        songs.forEach((song, index) => {
-            grid.appendChild(buildResultCard(song, index));
+        songs.forEach((s, i) => {
+            // mood payload may lack tempo/popularity — fall back to full songs list
+            const full = state.songs.find(x => x.id === s.id) || s;
+            grid.appendChild(buildResultCard({
+                id: full.id,
+                title: full.title,
+                artist: full.artist,
+                energy: full.energy ?? 0,
+                danceability: full.danceability ?? 0,
+                tempo: full.tempo ?? 0,
+                popularity: full.popularity ?? 0,
+            }, i));
         });
     }
 
-    wrapper.classList.remove('hidden');
-
-    setTimeout(() => {
-        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
 function clearMoodFilter() {
     state.selectedMood = null;
-
-    document.querySelectorAll('.mood-card')
-        .forEach(card => card.classList.remove('active'));
-
+    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
     document.getElementById('moodFilterResults')?.classList.add('hidden');
 }
 
 /* ============================================================================
    ANALYTICS
    ============================================================================ */
-
 async function loadAnalytics() {
     const result = await api('/api/analytics', 'GET');
-
     if (!result || !result.summary) return;
-
     state.analytics = result;
 
-    const summary = result.summary;
+    const s = result.summary;
+    animateNumber('totalSongs', s.total_songs, 0);
+    animateNumber('avgEnergy', s.avg_energy, 2);
+    animateNumber('avgDance', s.avg_danceability, 2);
+    animateNumber('avgTempo', s.avg_tempo, 0);
+    animateNumber('avgPopularity', s.avg_popularity, 0);
 
-    animateNumber('totalSongs', summary.total_songs, 0);
-    animateNumber('avgEnergy', summary.avg_energy, 2);
-    animateNumber('avgDance', summary.avg_danceability, 2);
-    animateNumber('avgDanceability', summary.avg_danceability, 2);
-    animateNumber('avgTempo', summary.avg_tempo, 0);
-    animateNumber('avgPopularity', summary.avg_popularity, 0);
+    // mini bars
+    fillBar(document.querySelector('#avgEnergy + .bar-mini .bar-mini-fill'), s.avg_energy * 100);
+    fillBar(document.querySelector('#avgDance + .bar-mini .bar-mini-fill'), s.avg_danceability * 100);
+    fillBar(document.querySelector('#avgPopularity + .bar-mini .bar-mini-fill'), s.avg_popularity);
 
-    const topMood =
-        summary.most_common_mood ||
-        Object.entries(state.allMoods).sort((a, b) => b[1].length - a[1].length)[0]?.[0];
+    // dominant tempo
+    const td = result.distributions?.tempo || {};
+    const tempoLabels = { slow: 'Slow', moderate: 'Moderate', fast: 'Fast' };
+    const domTempo = Object.entries(td).sort((a, b) => b[1] - a[1])[0];
+    if (domTempo) setText('dominantTempo', tempoLabels[domTempo[0]] || domTempo[0]);
 
-    if (topMood) setText('commonMood', topMood);
+    // top mood (computed from state.allMoods if available)
+    const topMood = Object.entries(state.allMoods).sort((a, b) => b[1].length - a[1].length)[0];
+    if (topMood) setText('commonMood', topMood[0]);
 
-    const tempoData = result.distributions?.tempo || {};
-    const energyData = result.distributions?.energy || {};
+    // avg match — approximate (we don't have per-pair data); show a sensible derived value
+    setText('avgMatch', Math.round(s.avg_energy * 50 + s.avg_danceability * 50) + '%');
 
-    renderBarChart('tempoChart', tempoData, {
-        slow: 'Slow',
-        moderate: 'Moderate',
-        fast: 'Fast',
-    });
-
-    renderBarChart('energyChart', energyData, {
-        low: 'Low',
-        medium: 'Medium',
-        high: 'High',
-    });
+    // charts
+    renderBarChart('tempoChart', td, { slow: 'Slow (<90)', moderate: 'Moderate', fast: 'Fast (≥130)' });
+    renderBarChart('energyChart', result.distributions?.energy || {}, { low: 'Low (<.4)', medium: 'Medium', high: 'High (≥.7)' });
 }
 
 function animateNumber(id, target, decimals) {
     const el = document.getElementById(id);
     if (!el) return;
-
     const start = 0;
     const duration = 900;
-    const startTime = performance.now();
-
+    const t0 = performance.now();
     function step(now) {
-        const progress = Math.min(1, (now - startTime) / duration);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const value = start + (target - start) * eased;
-
-        el.textContent = decimals === 0
-            ? Math.round(value).toLocaleString()
-            : value.toFixed(decimals);
-
-        if (progress < 1) requestAnimationFrame(step);
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = start + (target - start) * eased;
+        el.textContent = decimals === 0 ? Math.round(v).toLocaleString() : v.toFixed(decimals);
+        if (p < 1) requestAnimationFrame(step);
     }
-
     requestAnimationFrame(step);
 }
 
+function fillBar(el, pct) {
+    if (!el) return;
+    requestAnimationFrame(() => { el.style.width = Math.max(0, Math.min(100, pct)) + '%'; });
+}
+
 function renderBarChart(id, data, labels) {
-    const chart = document.getElementById(id);
-    if (!chart) return;
-
-    chart.innerHTML = '';
-
-    const total = Object.values(data).reduce((sum, value) => sum + value, 0) || 1;
-
-    Object.entries(data).forEach(([key, value], index) => {
-        const percent = (value / total) * 100;
-
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+    Object.entries(data).forEach(([key, value], i) => {
+        const pct = (value / total) * 100;
         const row = document.createElement('div');
         row.className = 'bar-row';
-
         row.innerHTML = `
             <div class="bar-row-label">${labels[key] || key}</div>
-            <div class="bar-track">
-                <div class="bar-fill" style="width: 0"></div>
-            </div>
-            <div class="bar-row-value">${value}</div>
-        `;
-
-        chart.appendChild(row);
-
+            <div class="bar-track"><div class="bar-fill" data-fill="${pct}"></div></div>
+            <div class="bar-row-value">${value}</div>`;
+        el.appendChild(row);
         setTimeout(() => {
-            row.querySelector('.bar-fill').style.width = percent + '%';
-        }, 100 + index * 80);
+            row.querySelector('.bar-fill').style.width = pct + '%';
+        }, 100 + i * 80);
     });
 }
 
 /* ============================================================================
    BATTLE
    ============================================================================ */
-
 function populateBattleSelects() {
-    const song1 = document.getElementById('song1');
-    const song2 = document.getElementById('song2');
-
-    if (!song1 || !song2) return;
-
+    const a = document.getElementById('song1');
+    const b = document.getElementById('song2');
+    if (!a || !b) return;
+    // deduplicate by id
     const seen = new Set();
+    const uniq = state.songs.filter(s => seen.has(s.id) ? false : seen.add(s.id));
+    uniq.sort((x, y) => x.title.localeCompare(y.title));
 
-    const uniqueSongs = state.songs.filter(song => {
-        if (seen.has(song.id)) return false;
-        seen.add(song.id);
-        return true;
-    });
-
-    uniqueSongs.sort((a, b) => a.title.localeCompare(b.title));
-
-    const options = uniqueSongs
-        .map(song => `<option value="${song.id}">${escapeHtml(song.title)} — ${escapeHtml(song.artist)}</option>`)
-        .join('');
-
-    song1.innerHTML = `<option value="">Select song…</option>${options}`;
-    song2.innerHTML = `<option value="">Select song…</option>${options}`;
+    const opts = uniq.map(s => `<option value="${s.id}">${escapeHtml(s.title)} — ${escapeHtml(s.artist)}</option>`).join('');
+    a.innerHTML = `<option value="">Select song…</option>${opts}`;
+    b.innerHTML = `<option value="">Select song…</option>${opts}`;
 }
 
 async function handleBattle() {
-    const id1 = parseInt(document.getElementById('song1')?.value, 10);
-    const id2 = parseInt(document.getElementById('song2')?.value, 10);
+    const id1 = parseInt(document.getElementById('song1').value, 10);
+    const id2 = parseInt(document.getElementById('song2').value, 10);
+    if (!id1 || !id2) { toast('Pick two tracks to battle'); return; }
+    if (id1 === id2) { toast('Pick two different tracks'); return; }
 
-    if (!id1 || !id2) {
-        toast('Pick two tracks to battle');
-        return;
-    }
-
-    if (id1 === id2) {
-        toast('Pick two different tracks');
-        return;
-    }
-
-    const result = await api('/api/battle', 'POST', {
-        song1_id: id1,
-        song2_id: id2,
-    });
-
-    if (!result) {
-        toast('Battle failed. Try again.');
-        return;
-    }
-
+    const result = await api('/api/battle', 'POST', { song1_id: id1, song2_id: id2 });
+    if (!result) { toast('Battle failed — try again'); return; }
     renderBattle(result);
 }
 
-function renderBattle(result) {
-    const wrapper = document.getElementById('battleResults');
-    if (!wrapper) return;
+function renderBattle(r) {
+    const wrap = document.getElementById('battleResults');
+    if (!wrap) return;
+    const s1 = r.song1 || {};
+    const s2 = r.song2 || {};
+    const winner = r.winner || {};
+    const winnerIs1 = winner.id === s1.id;
 
-    const song1 = result.song1 || {};
-    const song2 = result.song2 || {};
-
-    const winnerIs1 = result.winner === 'song1';
-    const winner = winnerIs1 ? song1 : song2;
-
-    wrapper.innerHTML = `
+    wrap.innerHTML = `
         <div class="battle-winner">
             <div class="battle-winner-label">Winner</div>
-            <div class="battle-winner-name">
-                ${escapeHtml(winner.title || '—')}
-                ${winner.artist ? ' · ' + escapeHtml(winner.artist) : ''}
-            </div>
+            <div class="battle-winner-name">${escapeHtml(winner.title || '—')} ${winner.artist ? '· ' + escapeHtml(winner.artist) : ''}</div>
         </div>
-
         <div class="battle-comparison">
-            ${battleSide(song1, winnerIs1)}
-            ${battleSide(song2, !winnerIs1)}
-        </div>
-    `;
-
-    wrapper.classList.remove('hidden');
-
-    setTimeout(() => {
-        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+            ${battleSide(s1, winnerIs1)}
+            ${battleSide(s2, !winnerIs1)}
+        </div>`;
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-function battleSide(song, isWinner) {
+function battleSide(s, isWinner) {
     return `
         <div class="battle-side ${isWinner ? 'winner' : ''}">
-            <div class="battle-side-title">
-                ${escapeHtml(song.title || '—')}<br>
-                <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">
-                    ${escapeHtml(song.artist || '')}
-                </span>
-            </div>
-
+            <div class="battle-side-title">${escapeHtml(s.title || '—')}<br><span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">${escapeHtml(s.artist || '')}</span></div>
             <div class="battle-side-features">
-                <div class="battle-feature-row">
-                    <span>Energy</span>
-                    <span>${Number(song.energy || 0).toFixed(2)}</span>
-                </div>
-
-                <div class="battle-feature-row">
-                    <span>Dance</span>
-                    <span>${Number(song.danceability || 0).toFixed(2)}</span>
-                </div>
-
-                <div class="battle-feature-row">
-                    <span>Tempo</span>
-                    <span>${song.tempo || 0} BPM</span>
-                </div>
-
-                <div class="battle-feature-row">
-                    <span>Popularity</span>
-                    <span>${song.popularity || 0}</span>
-                </div>
+                <div class="battle-feature-row"><span>Energy</span><span>${(s.energy ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Dance</span><span>${(s.danceability ?? 0).toFixed(2)}</span></div>
+                <div class="battle-feature-row"><span>Tempo</span><span>${s.tempo ?? 0} BPM</span></div>
+                <div class="battle-feature-row"><span>Popularity</span><span>${s.popularity ?? 0}</span></div>
             </div>
-        </div>
-    `;
+        </div>`;
 }
 
 /* ============================================================================
    UTIL
    ============================================================================ */
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-}
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-    }[char]));
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
 }
