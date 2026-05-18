@@ -552,7 +552,15 @@ function escapeHtml(str) {
    function createSpotifyButton(song) {
     if (!song.spotify_url) return '';
     
-    return `
+    return 
+      return `
+    <div class="result-card" data-song-id="${song.id}">
+        <h4>${song.title}</h4>
+        <p>${song.artist}</p>
+        ${metrics}
+        ${spotifyButton}
+    </div>
+`;
         <a 
             href="${song.spotify_url}" 
             target="_blank" 
