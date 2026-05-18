@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Intelligence Platform</title>
+    <style>
+        /* ===========================
+           DESIGN TOKENS & VARIABLES
+           =========================== */
+        :root {
+            --primary-blue: #2563eb;
+            --light-blue: #3b82f6;
+            --sky-blue: #60a5fa;
+            --soft-blue: #dbeafe;
+            --charcoal: #1f2937;
+            --dark-charcoal: #111827;
+            --off-white: #f9fafb;
+            --light-gray: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --accent-green: #10b981;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        /* ===========================
+           GLOBAL & TYPOGRAPHY
+           =========================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.875rem;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: var(--light-blue);
+        }
+
+        /* ===========================
+           LAYOUT & CONTAINERS
+           =========================== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1f2937 0%, #2563eb 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            filter: blur(40px);
+            pointer-events: none;
+        }
+
+        header .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        header h1 {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 2.2rem;
+            margin-bottom: 0.3rem;
+        }
+
+        header .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        main {
+            padding-bottom: 4rem;
+        }
+
+        /* ===========================
+           CARDS & COMPONENTS
+           =========================== */
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+
+        .card-dense {
+            padding: 1rem;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .section h2 {
+            color: var(--charcoal);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--soft-blue);
+            display: inline-block;
+        }
+
+        /* ===========================
+           SEARCH & INPUT
+           =========================== */
+        .search-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--text-primary);
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        button {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--soft-blue);
+            color: var(--primary-blue);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* ===========================
+           RESULTS & LISTS
+           =========================== */
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .song-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--off-white);
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--primary-blue);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .song-item:hover {
+            background: rgba(37, 99, 235, 0.05);
+            transform: translateX(4px);
+        }
+
+        .song-info h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .song-info p {
+            font-size: 0.875rem;
+        }
+
+        /* ===========================
+           METRICS & STATS
+           =========================== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(96, 165, 250, 0.05));
+            border: 1px solid var(--soft-blue);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary-blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .stat-card h4 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===========================
+           PROGRESS BARS & CHARTS
+           =========================== */
+        .progress-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--light-gray);
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset var(--shadow-sm);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--sky-blue));
+            border-radius: 999px;
+            transition: width 0.6s ease-out;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+        }
+
+        /* ===========================
+           COMPARISON/BATTLE
+           =========================== */
+        .battle-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+            align-items: start;
+        }
+
+        .battle-song {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: 2px solid var(--light-gray);
+            transition: all 0.3s ease;
+        }
+
+        .battle-song.winner {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .winner-badge {
+            display: inline-block;
+            background: var(--accent-green);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .battle-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .battle-metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-name {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: 1.125rem;
+        }
+
+        /* ===========================
+           RECOMMENDATIONS
+           =========================== */
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .recommendation-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: 1px solid var(--light-gray);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommendation-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--sky-blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-blue);
+        }
+
+        .recommendation-card:hover::before {
+            opacity: 1;
+        }
+
+        .rec-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--charcoal);
+        }
+
+        .rec-artist {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .rec-score {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: var(--radius-md);
+        }
+
+        .rec-score-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .rec-score-value {
+            font-weight: 700;
+            color: var(--primary-blue);
+            font-size: 1.25rem;
+        }
+
+        .rec-mood {
+            display: inline-block;
+            background: var(--soft-blue);
+            color: var(--primary-blue);
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        /* ===========================
+           MOOD SECTION
+           =========================== */
+        .moods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .mood-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            border: 2px solid var(--light-gray);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .mood-card:hover {
+            border-color: var(--primary-blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .mood-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .mood-name {
+            font-weight: 600;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .mood-count {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ===========================
+           TABS
+           =========================== */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid var(--light-gray);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: var(--primary-blue);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ===========================
+           INSIGHTS
+           =========================== */
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .insight-item {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(96, 165, 250, 0.05));
+            border-left: 3px solid var(--primary-blue);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            animation: slideRight 0.4s ease-out;
+        }
+
+        /* ===========================
+           ANALYTICS CHARTS
+           =========================== */
+        .chart-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--light-gray);
+        }
+
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--charcoal);
+        }
+
+        .distribution-bars {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-end;
+            justify-content: space-around;
+        }
+
+        .bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .bar-fill {
+            width: 100%;
+            background: linear-gradient(180deg, var(--primary-blue), var(--sky-blue));
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            transition: all 0.3s ease;
+            min-height: 20px;
+            position: relative;
+        }
+
+        .bar-fill:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 -4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .bar-label {
+            margin-top: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 700;
+            color: var(--charcoal);
+            font-size: 0.9rem;
+        }
+
+        /* ===========================
+           ANIMATIONS
+           =========================== */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ===========================
+           FOOTER
+           =========================== */
+        footer {
+            background: var(--dark-charcoal);
+            color: white;
+            padding: 3rem 0;
+            margin-top: 4rem;
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--sky-blue);
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        /* ===========================
+           RESPONSIVE
+           =========================== */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.875rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .search-wrapper {
+                flex-direction: column;
+            }
+
+            .battle-container {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .distribution-bars {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .bar {
+                width: 100%;
+            }
+
+            .bar-fill {
+                height: 30px;
+            }
+        }
+
+        /* ===========================
+           EMPTY STATE
+           =========================== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="container">
+            <h1>🎵 Audio Intelligence</h1>
+            <p class="subtitle">Analyze music patterns. Get smart recommendations. Discover your vibe.</p>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main>
+        <div class="container">
+
+            <!-- SEARCH SECTION -->
+            <section class="section">
+                <h2>Search Songs</h2>
+                <div class="card">
+                    <div class="search-wrapper">
+                        <input type="text" id="searchInput" placeholder="Search by song title or artist...">
+                        <button class="btn-primary" onclick="searchSongs()">Search</button>
+                    </div>
+
+                    <div id="searchResults">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">Enter a song name to get started</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RECOMMENDATIONS SECTION -->
+            <section class="section" id="recommendationsSection" style="display: none;">
+                <h2>Recommendations</h2>
+                <div class="card card-dense">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                        <input type="number" id="recommendCount" value="5" min="1" max="20" style="width: 100px;">
+                        <button class="btn-primary" onclick="generateRecommendations()">Generate</button>
+                    </div>
+                </div>
+                <div id="recommendationsContainer" class="recommendations-grid"></div>
+            </section>
+
+            <!-- SONG BATTLE SECTION -->
+            <section class="section" id="battleSection" style="display: none;">
+                <h2>Song Battle</h2>
+                <div class="card card-dense">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Song 1</label>
+                            <select id="battleSong1"></select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Song 2</label>
+                            <select id="battleSong2"></select>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="battleSongs()" style="width: 100%;">⚔️ Compare Songs</button>
+                </div>
+                <div id="battleResults"></div>
+            </section>
+
+            <!-- ANALYTICS SECTION -->
+            <section class="section" id="analyticsSection" style="display: none;">
+                <h2>📊 Analytics Dashboard</h2>
+                <div id="analyticsContainer"></div>
+            </section>
+
+            <!-- MOODS SECTION -->
+            <section class="section" id="moodsSection" style="display: none;">
+                <h2>🎭 Mood Classification</h2>
+                <p style="margin-bottom: 1.5rem;">Songs automatically classified into mood categories based on audio features</p>
+                <div id="moodsContainer" class="moods-grid"></div>
+            </section>
+
+            <!-- INSIGHTS SECTION -->
+            <section class="section" id="insightsSection" style="display: none;">
+                <h2>✨ AI Insights</h2>
+                <div class="card">
+                    <div id="insightsContainer" class="insights-list"></div>
+                </div>
+            </section>
+
+            <!-- ABOUT SECTION -->
+            <section class="section">
+                <h2>📚 About This Platform</h2>
+                <div class="card">
+                    <div style="max-width: 800px;">
+                        <h3>How Recommendation Systems Work</h3>
+                        <p>This platform uses <strong>weighted Euclidean distance</strong> to measure similarity between songs. Here's how:</p>
+                        
+                        <h4 style="margin-top: 1.5rem;">Step 1: Feature Extraction</h4>
+                        <p>Each song has four metrics: energy (0-1), danceability (0-1), tempo (BPM), and popularity (0-100).</p>
+                        
+                        <h4 style="margin-top: 1.5rem;">Step 2: Normalization</h4>
+                        <p>Tempo ranges 60-200 BPM while energy is 0-1, so we normalize all to 0-1 scale. This ensures fair comparison—a 20 BPM difference shouldn't matter more than a 0.2 energy difference.</p>
+                        
+                        <h4 style="margin-top: 1.5rem;">Step 3: Distance Calculation</h4>
+                        <p>We calculate weighted distance: <code>distance = 0.3×(ΔE) + 0.3×(ΔD) + 0.2×(ΔT) + 0.2×(ΔP)</code><br>
+                        Where E=energy, D=danceability, T=tempo, P=popularity.</p>
+                        
+                        <h4 style="margin-top: 1.5rem;">Step 4: Confidence Scoring</h4>
+                        <p>Lower distance = higher confidence. <code>Confidence = 1 - distance</code>. A score of 0.95 means 95% similar!</p>
+
+                        <h4 style="margin-top: 1.5rem;">Why This Works</h4>
+                        <p>Music taste is multi-dimensional. You don't just want the fastest song—you want energy-matched, dance-matched, and popular tracks. Weighting reflects this.</p>
+
+                        <h4 style="margin-top: 1.5rem;">Real-World Applications</h4>
+                        <p>Spotify, Apple Music, and YouTube Music use similar approaches (plus collaborative filtering for "users who liked X also liked Y").</p>
+
+                        <h4 style="margin-top: 1.5rem;">Future ML Enhancements</h4>
+                        <p>With more data, we could:</p>
+                        <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                            <li>Train embedding models to learn latent features</li>
+                            <li>Use clustering (K-means) for natural mood groups</li>
+                            <li>Implement collaborative filtering with user data</li>
+                            <li>Fine-tune weights with user feedback</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Audio Intelligence Platform. Built with music + algorithms.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // ===========================
+        // STATE & CACHE
+        // ===========================
+        let allSongs = [];
+        let selectedSong = null;
+
+        // ===========================
+        // INITIALIZATION
+        // ===========================
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePage();
+        });
+
+        function initializePage() {
+            // Populate battle dropdowns
+            const song1Select = document.getElementById('battleSong1');
+            const song2Select = document.getElementById('battleSong2');
+
+            allSongs.forEach(song => {
+                const option1 = document.createElement('option');
+                option1.value = song.id;
+                option1.textContent = `${song.title} - ${song.artist}`;
+                song1Select.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = song.id;
+                option2.textContent = `${song.title} - ${song.artist}`;
+                song2Select.appendChild(option2);
+            });
+
+            // Set default selections
+            if (allSongs.length > 1) {
+                song1Select.value = allSongs[0].id;
+                song2Select.value = allSongs[1].id;
+            }
+
+            // Load analytics on init
+            loadAnalytics();
+            loadMoods();
+        }
+
+        // ===========================
+        // SEARCH
+        // ===========================
+        async function searchSongs() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query || query.length < 2) return;
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                if (data.results.length === 0) {
+                    document.getElementById('searchResults').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <p>No songs found. Try a different search.</p>
+                        </div>
+                    `;
+                    document.getElementById('recommendationsSection').style.display = 'none';
+                    document.getElementById('insightsSection').style.display = 'none';
+                    return;
+                }
+
+                // Render results
+                let html = '<div class="results-list">';
+                data.results.forEach(song => {
+                    html += `
+                        <div class="song-item" onclick="selectSong(${song.id})">
+                            <div class="song-info">
+                                <h4>${song.title}</h4>
+                                <p>${song.artist}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 600; color: var(--primary-blue);">⚡ ${song.energy.toFixed(2)}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">💃 ${song.danceability.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+
+                document.getElementById('searchResults').innerHTML = html;
+                document.getElementById('recommendationsSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        function selectSong(songId) {
+            selectedSong = allSongs.find(s => s.id === songId);
+            if (!selectedSong) return;
+
+            document.getElementById('recommendationsSection').style.display = 'block';
+            document.getElementById('insightsSection').style.display = 'block';
+
+            // Highlight selected
+            document.querySelectorAll('.song-item').forEach(el => {
+                el.style.borderLeftColor = 'var(--light-gray)';
+            });
+            event.target.closest('.song-item').style.borderLeftColor = 'var(--accent-green)';
+
+            generateRecommendations();
+            generateInsights();
+        }
+
+        // ===========================
+        // RECOMMENDATIONS
+        // ===========================
+        async function generateRecommendations() {
+            if (!selectedSong) return;
+
+            const count = parseInt(document.getElementById('recommendCount').value) || 5;
+
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ song_id: selectedSong.id, count })
+                });
+
+                const data = await response.json();
+
+                let html = '';
+                data.recommendations.forEach(rec => {
+                    html += `
+                        <div class="recommendation-card">
+                            <div class="rec-title">${rec.title}</div>
+                            <div class="rec-artist">${rec.artist}</div>
+                            <div class="rec-score">
+                                <span class="rec-score-label">Match:</span>
+                                <span class="rec-score-value">${(rec.similarity_score * 100).toFixed(0)}%</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.875rem; margin-bottom: 1rem;">
+                                <div><strong>⚡</strong> ${rec.energy.toFixed(2)}</div>
+                                <div><strong>💃</strong> ${rec.danceability.toFixed(2)}</div>
+                                <div><strong>🎼</strong> ${rec.tempo} BPM</div>
+                                <div><strong>⭐</strong> ${rec.popularity}/100</div>
+                            </div>
+                            <div class="rec-mood">${rec.mood}</div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('recommendationsContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Recommendation error:', error);
+            }
+        }
+
+        // ===========================
+        // BATTLE
+        // ===========================
+        async function battleSongs() {
+            const song1Id = parseInt(document.getElementById('battleSong1').value);
+            const song2Id = parseInt(document.getElementById('battleSong2').value);
+
+            if (song1Id === song2Id) {
+                alert('Please select different songs');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/battle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ song1_id: song1Id, song2_id: song2Id })
+                });
+
+                const data = await response.json();
+
+                let html = '<div class="battle-container">';
+
+                // Song 1
+                const song1Winner = data.winner === 'song1';
+                html += `
+                    <div class="battle-song ${song1Winner ? 'winner' : ''}">
+                        ${song1Winner ? '<div class="winner-badge">🏆 Winner</div>' : ''}
+                        <h3>${data.song1.title}</h3>
+                        <p style="color: var(--text-secondary);">${data.song1.artist}</p>
+                        <div style="margin: 1.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--primary-blue);">${(data.song1.score * 100).toFixed(0)} pts</div>
+                        <div class="battle-metric">
+                            <span class="metric-name">⚡ Energy</span>
+                            <span class="metric-value">${data.song1.metrics.energy.toFixed(2)}</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">💃 Danceability</span>
+                            <span class="metric-value">${data.song1.metrics.danceability.toFixed(2)}</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">🎼 Tempo</span>
+                            <span class="metric-value">${data.song1.metrics.tempo} BPM</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">⭐ Popularity</span>
+                            <span class="metric-value">${data.song1.metrics.popularity}/100</span>
+                        </div>
+                    </div>
+                `;
+
+                // Song 2
+                const song2Winner = data.winner === 'song2';
+                html += `
+                    <div class="battle-song ${song2Winner ? 'winner' : ''}">
+                        ${song2Winner ? '<div class="winner-badge">🏆 Winner</div>' : ''}
+                        <h3>${data.song2.title}</h3>
+                        <p style="color: var(--text-secondary);">${data.song2.artist}</p>
+                        <div style="margin: 1.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--primary-blue);">${(data.song2.score * 100).toFixed(0)} pts</div>
+                        <div class="battle-metric">
+                            <span class="metric-name">⚡ Energy</span>
+                            <span class="metric-value">${data.song2.metrics.energy.toFixed(2)}</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">💃 Danceability</span>
+                            <span class="metric-value">${data.song2.metrics.danceability.toFixed(2)}</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">🎼 Tempo</span>
+                            <span class="metric-value">${data.song2.metrics.tempo} BPM</span>
+                        </div>
+                        <div class="battle-metric">
+                            <span class="metric-name">⭐ Popularity</span>
+                            <span class="metric-value">${data.song2.metrics.popularity}/100</span>
+                        </div>
+                    </div>
+                `;
+
+                html += '</div>';
+                document.getElementById('battleResults').innerHTML = html;
+                document.getElementById('battleSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Battle error:', error);
+            }
+        }
+
+        // ===========================
+        // ANALYTICS
+        // ===========================
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/analytics');
+                const data = await response.json();
+
+                let html = `
+                    <div class="metrics-grid">
+                        <div class="stat-card">
+                            <h4>Total Songs</h4>
+                            <div class="stat-value">${data.summary.total_songs}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Avg Energy</h4>
+                            <div class="stat-value">${data.summary.avg_energy.toFixed(2)}</div>
+                            <div class="stat-label">on 0-1 scale</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Avg Danceability</h4>
+                            <div class="stat-value">${data.summary.avg_danceability.toFixed(2)}</div>
+                            <div class="stat-label">on 0-1 scale</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Avg Tempo</h4>
+                            <div class="stat-value">${data.summary.avg_tempo.toFixed(0)}</div>
+                            <div class="stat-label">BPM</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Avg Popularity</h4>
+                            <div class="stat-value">${data.summary.avg_popularity.toFixed(0)}</div>
+                            <div class="stat-label">out of 100</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">🎼 Tempo Distribution</div>
+                        <div class="distribution-bars">
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.tempo.slow / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.tempo.slow}</div>
+                                </div>
+                                <div class="bar-label">Slow (< 90 BPM)</div>
+                            </div>
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.tempo.moderate / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.tempo.moderate}</div>
+                                </div>
+                                <div class="bar-label">Moderate (90-130)</div>
+                            </div>
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.tempo.fast / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.tempo.fast}</div>
+                                </div>
+                                <div class="bar-label">Fast (> 130 BPM)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">⚡ Energy Distribution</div>
+                        <div class="distribution-bars">
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.energy.low / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.energy.low}</div>
+                                </div>
+                                <div class="bar-label">Low (< 0.4)</div>
+                            </div>
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.energy.medium / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.energy.medium}</div>
+                                </div>
+                                <div class="bar-label">Medium (0.4-0.7)</div>
+                            </div>
+                            <div class="bar">
+                                <div class="bar-fill" style="height: ${(data.distributions.energy.high / data.summary.total_songs * 300)}px;">
+                                    <div class="bar-value">${data.distributions.energy.high}</div>
+                                </div>
+                                <div class="bar-label">High (> 0.7)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">🎯 Extremes</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                            <div style="padding: 1rem; background: rgba(37, 99, 235, 0.05); border-radius: var(--radius-md); border-left: 3px solid var(--primary-blue);">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">💃 Most Danceable</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 0.25rem;">${data.extremes.most_danceable.title}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">${data.extremes.most_danceable.artist}</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600;">${data.extremes.most_danceable.danceability.toFixed(2)}</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(37, 99, 235, 0.05); border-radius: var(--radius-md); border-left: 3px solid var(--primary-blue);">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">⚡ Highest Energy</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 0.25rem;">${data.extremes.highest_energy.title}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">${data.extremes.highest_energy.artist}</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600;">${data.extremes.highest_energy.energy.toFixed(2)}</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(37, 99, 235, 0.05); border-radius: var(--radius-md); border-left: 3px solid var(--primary-blue);">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">🚀 Fastest Track</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 0.25rem;">${data.extremes.fastest.title}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">${data.extremes.fastest.artist}</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600;">${data.extremes.fastest.tempo} BPM</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('analyticsContainer').innerHTML = html;
+                document.getElementById('analyticsSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+
+        // ===========================
+        // MOODS
+        // ===========================
+        async function loadMoods() {
+            try {
+                const response = await fetch('/api/moods');
+                const data = await response.json();
+
+                const moodEmojis = {
+                    'Gym Energy': '💪',
+                    'Party Vibes': '🎉',
+                    'Energetic': '⚡',
+                    'Feel-Good': '😊',
+                    'Study Session': '📚',
+                    'Chilled': '😎',
+                    'Summer Vibes': '☀️',
+                    'Late Night': '🌙',
+                    'Melancholy': '🎻',
+                    'Focus Mode': '🎯'
+                };
+
+                let html = '';
+                Object.keys(data.moods).forEach(mood => {
+                    html += `
+                        <div class="mood-card">
+                            <div class="mood-emoji">${moodEmojis[mood] || '🎵'}</div>
+                            <div class="mood-name">${mood}</div>
+                            <div class="mood-count">${data.moods[mood].length} songs</div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('moodsContainer').innerHTML = html;
+                document.getElementById('moodsSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Moods error:', error);
+            }
+        }
+
+        // ===========================
+        // INSIGHTS
+        // ===========================
+        async function generateInsights() {
+            if (!selectedSong) return;
+
+            try {
+                const response = await fetch('/api/insights', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ song_id: selectedSong.id })
+                });
+
+                const data = await response.json();
+
+                let html = '';
+                data.insights.forEach((insight, idx) => {
+                    html += `<div class="insight-item" style="animation-delay: ${idx * 50}ms;">${insight}</div>`;
+                });
+
+                document.getElementById('insightsContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Insights error:', error);
+            }
+        }
+
+        // ===========================
+        // ENTER KEY SUPPORT
+        // ===========================
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchSongs();
+            });
+        });
+    </script>
+
+</body>
+</html>
