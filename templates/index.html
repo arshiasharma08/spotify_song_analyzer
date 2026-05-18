@@ -1,1 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Intelligence Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Three.js for lightweight 3D particles -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- 3D BACKGROUND CANVAS -->
+    <canvas id="canvas-3d"></canvas>
+    <div class="bg-overlay"></div>
 
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🎵 Audio Intelligence</h1>
+            <p class="logo-subtitle">Music Analytics & Recommendations</p>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+
+            <!-- HERO / SEARCH SECTION -->
+            <section class="hero-section">
+                <h2 class="hero-title">Find Your Next Favorite Song</h2>
+                <p class="hero-subtitle">Powered by audio feature analysis and smart recommendations</p>
+                
+                <div class="search-bar-wrapper">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Search by song or artist..."
+                        autocomplete="off"
+                    >
+                    <button id="searchBtn" class="btn btn-primary">
+                        Search
+                    </button>
+                </div>
+                <p class="search-hint">Try: "levitating", "blinding lights", "driver license"</p>
+            </section>
+
+            <!-- SEARCH RESULTS -->
+            <section id="searchResults" class="section hidden">
+                <h3 class="section-title">Search Results</h3>
+                <div id="resultsList" class="results-grid"></div>
+            </section>
+
+            <!-- SELECTED SONG INFO -->
+            <section id="selectedSongSection" class="section hidden">
+                <h3 class="section-title">Selected Track</h3>
+                <div id="selectedSongCard" class="selected-song-card"></div>
+            </section>
+
+            <!-- MOOD FILTER SECTION -->
+            <section id="moodSection" class="section hidden">
+                <div class="section-header">
+                    <h3 class="section-title">Filter by Mood</h3>
+                    <button id="clearMoodBtn" class="btn btn-secondary btn-small hidden">
+                        Clear Filter
+                    </button>
+                </div>
+                <p class="section-subtitle">Click a mood to filter recommendations</p>
+                <div id="moodGrid" class="mood-grid"></div>
+                <div id="moodSummary" class="mood-summary hidden"></div>
+            </section>
+
+            <!-- RECOMMENDATIONS SECTION -->
+            <section id="recommendationsSection" class="section hidden">
+                <h3 class="section-title">Recommendations</h3>
+                <p id="recSubtitle" class="section-subtitle">Based on audio feature similarity</p>
+                <div id="recommendationsGrid" class="recommendations-grid"></div>
+            </section>
+
+            <!-- INSIGHTS SECTION -->
+            <section id="insightsSection" class="section hidden">
+                <h3 class="section-title">Song Insights</h3>
+                <div id="insightsList" class="insights-list"></div>
+            </section>
+
+            <!-- ANALYTICS DASHBOARD -->
+            <section id="analyticsSection" class="section hidden">
+                <h3 class="section-title">Analytics Dashboard</h3>
+                
+                <!-- Quick Stats -->
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Songs</div>
+                        <div id="totalSongs" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Energy</div>
+                        <div id="avgEnergy" class="stat-value">0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Danceability</div>
+                        <div id="avgDance" class="stat-value">0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Tempo</div>
+                        <div id="avgTempo" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Popularity</div>
+                        <div id="avgPopularity" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Most Common Mood</div>
+                        <div id="commonMood" class="stat-value">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Match %</div>
+                        <div id="avgMatch" class="stat-value">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Dominant Tempo</div>
+                        <div id="dominantTempo" class="stat-value">--</div>
+                    </div>
+                </div>
+
+                <!-- Distribution Charts -->
+                <div class="charts-section">
+                    <h4 class="chart-title">Tempo Distribution</h4>
+                    <div id="tempoChart" class="chart-bar"></div>
+                </div>
+
+                <div class="charts-section">
+                    <h4 class="chart-title">Energy Distribution</h4>
+                    <div id="energyChart" class="chart-bar"></div>
+                </div>
+            </section>
+
+            <!-- SONG BATTLE SECTION -->
+            <section id="battleSection" class="section hidden">
+                <h3 class="section-title">Song Battle</h3>
+                <p class="section-subtitle">Compare two songs head-to-head</p>
+                
+                <div class="battle-inputs">
+                    <div class="battle-input-group">
+                        <label for="song1">Song 1</label>
+                        <select id="song1" class="select-input">
+                            <option value="">Select song...</option>
+                        </select>
+                    </div>
+                    <div class="battle-input-group">
+                        <label for="song2">Song 2</label>
+                        <select id="song2" class="select-input">
+                            <option value="">Select song...</option>
+                        </select>
+                    </div>
+                    <button id="battleBtn" class="btn btn-primary">Compare</button>
+                </div>
+
+                <div id="battleResults" class="battle-results hidden"></div>
+            </section>
+
+            <!-- MOODS SHOWCASE SECTION -->
+            <section id="moodsShowcaseSection" class="section hidden">
+                <h3 class="section-title">All Mood Categories</h3>
+                <div id="moodsShowcaseGrid" class="moods-showcase-grid"></div>
+            </section>
+
+            <!-- ABOUT SECTION -->
+            <section class="about-section">
+                <h3 class="section-title">How It Works</h3>
+                <div class="about-content">
+                    <p>
+                        This platform uses <strong>weighted Euclidean distance</strong> to find similar songs.
+                        Each track is analyzed across normalized audio features: energy, danceability, tempo, and popularity.
+                    </p>
+                    <p>
+                        The recommendation engine calculates similarity with weighted importance:
+                        Energy (30%) + Danceability (30%) + Tempo (20%) + Popularity (20%).
+                    </p>
+                    <p>
+                        Click mood cards to filter recommendations by vibe,
+                        or use Song Battle to compare any two tracks across all metrics.
+                    </p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>&copy; 2025 Audio Intelligence Platform. Built with Flask, music analytics, and data science.</p>
+    </footer>
+
+    <!-- LOADING INDICATOR -->
+    <div id="loadingIndicator" class="loading-indicator hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
