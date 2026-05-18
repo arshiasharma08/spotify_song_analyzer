@@ -212,7 +212,16 @@ function buildResultCard(song, i = 0) {
         </div>`;
     card.addEventListener('click', () => selectSong(song));
     return card;
+`;
 }
+return `
+    <div class="result-card" data-song-id="${song.id}">
+        <h4>${song.title}</h4>
+        <p>${song.artist}</p>
+        ${metrics}
+        ${spotifyButton}
+    </div>
+`;
 
 /* ============================================================================
    SELECT SONG → RECS + INSIGHTS
