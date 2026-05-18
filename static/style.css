@@ -1,0 +1,1142 @@
+/* ============================================================================
+   AUDIO INTELLIGENCE PLATFORM - COMPLETE STYLING
+   Modern AI/data analytics aesthetic with neutral luxury design
+   ============================================================================ */
+
+/* ============================================================================
+   1. DESIGN TOKENS & CSS VARIABLES
+   ============================================================================ */
+:root {
+    /* Colors - Neutral Luxury Palette */
+    --primary-dark: #1a1a2e;      /* Very dark blue-black */
+    --primary-blue: #2d3e50;      /* Dark blue-gray */
+    --accent-blue: #4a90e2;       /* Bright blue */
+    --accent-green: #26a69a;      /* Muted teal green */
+    --light-bg: #f5f7fa;          /* Very light gray-blue */
+    --white: #ffffff;
+    --gray-light: #e8edf2;        /* Light gray */
+    --gray-medium: #b0bac9;       /* Medium gray */
+    --gray-dark: #64748b;         /* Dark gray */
+    
+    /* Semantic Colors */
+    --success: #10b981;           /* Green */
+    --danger: #ef4444;            /* Red */
+    --warning: #f59e0b;           /* Amber */
+    
+    /* Spacing */
+    --spacing-xs: 0.5rem;         /* 8px */
+    --spacing-sm: 1rem;           /* 16px */
+    --spacing-md: 1.5rem;         /* 24px */
+    --spacing-lg: 2rem;           /* 32px */
+    --spacing-xl: 3rem;           /* 48px */
+    
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.2);
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+                   'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-mono: 'Courier New', monospace;
+    --line-height: 1.6;
+}
+
+/* ============================================================================
+   2. GLOBAL STYLES
+   ============================================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    font-family: var(--font-family);
+    background: linear-gradient(135deg, var(--light-bg) 0%, #f0f4f8 100%);
+    color: var(--primary-dark);
+    line-height: var(--line-height);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* ============================================================================
+   3. TYPOGRAPHY
+   ============================================================================ */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--primary-dark);
+    letter-spacing: -0.3px;
+    margin-bottom: var(--spacing-sm);
+}
+
+h1 { font-size: 2.5rem; line-height: 1.2; }
+h2 { font-size: 2rem; line-height: 1.3; }
+h3 { font-size: 1.5rem; line-height: 1.4; }
+h4 { font-size: 1.1rem; line-height: 1.5; }
+
+p {
+    color: var(--gray-dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--accent-green);
+    text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+    padding-left: var(--spacing-md);
+}
+
+li {
+    margin-bottom: 0.5rem;
+    color: var(--gray-dark);
+    position: relative;
+    padding-left: var(--spacing-md);
+}
+
+li:before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--accent-green);
+    font-weight: bold;
+}
+
+strong {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+/* ============================================================================
+   4. LAYOUT
+   ============================================================================ */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+    width: 100%;
+}
+
+/* ============================================================================
+   5. HEADER
+   ============================================================================ */
+.header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-blue) 100%);
+    color: white;
+    padding: var(--spacing-xl) var(--spacing-md);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+    margin: 0;
+}
+
+/* ============================================================================
+   6. MAIN CONTENT
+   ============================================================================ */
+.main-content {
+    padding: var(--spacing-xl) 0;
+    flex: 1;
+}
+
+/* ============================================================================
+   7. HERO SECTION
+   ============================================================================ */
+.hero-section {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    animation: slideDown 0.6s ease-out;
+}
+
+.hero-title {
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+    color: var(--primary-dark);
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--gray-dark);
+    margin-bottom: var(--spacing-lg);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============================================================================
+   8. SEARCH BAR
+   ============================================================================ */
+.search-container {
+    max-width: 700px;
+    margin: 0 auto;
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-box {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 250px;
+    max-width: 450px;
+    padding: var(--spacing-md);
+    font-size: 1rem;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: white;
+    color: var(--primary-dark);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.search-input::placeholder {
+    color: var(--gray-medium);
+}
+
+.search-hint {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--gray-medium);
+    margin-bottom: 0;
+}
+
+/* ============================================================================
+   9. BUTTONS
+   ============================================================================ */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-green) 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #3a7bc8 0%, #1f9a8a 100%);
+}
+
+.btn-secondary {
+    background: var(--gray-light);
+    color: var(--primary-dark);
+    border: 2px solid var(--gray-light);
+}
+
+.btn-secondary:hover {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+/* ============================================================================
+   10. SECTIONS
+   ============================================================================ */
+.section-title {
+    font-size: 1.8rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-dark);
+    position: relative;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 3px solid var(--accent-green);
+    display: inline-block;
+}
+
+.section-subtitle {
+    color: var(--gray-dark);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* ============================================================================
+   11. SEARCH RESULTS
+   ============================================================================ */
+.search-results-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+    animation: slideUp 0.5s ease-out;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.song-card {
+    background: white;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.song-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-green);
+    transition: left 0.3s ease;
+}
+
+.song-card:hover {
+    border-color: var(--accent-blue);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+}
+
+.song-card:hover::before {
+    left: 0;
+}
+
+.song-card h4 {
+    color: var(--primary-dark);
+    margin-bottom: 0.25rem;
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.song-card p {
+    margin-bottom: var(--spacing-sm);
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+}
+
+.song-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--gray-light);
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: var(--gray-medium);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.metric-value {
+    font-size: 1.3rem;
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+/* ============================================================================
+   12. SELECTED SONG SECTION
+   ============================================================================ */
+.selected-song-section {
+    background: linear-gradient(135deg, rgba(38, 166, 154, 0.1) 0%, rgba(74, 144, 226, 0.1) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    animation: slideUp 0.5s ease-out;
+}
+
+.selected-song-card {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.selected-song-card h3 {
+    color: var(--accent-green);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.3rem;
+}
+
+.song-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.info-item {
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, var(--light-bg) 0%, white 100%);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-blue);
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: var(--gray-medium);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.info-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.info-subtext {
+    font-size: 0.8rem;
+    color: var(--gray-medium);
+    margin-top: 0.5rem;
+}
+
+/* ============================================================================
+   13. RECOMMENDATIONS
+   ============================================================================ */
+.recommendations-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.recommendation-card {
+    background: linear-gradient(135deg, white 0%, var(--light-bg) 100%);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    border: 2px solid var(--gray-light);
+    border-left: 4px solid var(--accent-blue);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.recommendation-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--accent-blue);
+}
+
+.recommendation-card h4 {
+    color: var(--primary-dark);
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+}
+
+.recommendation-artist {
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.recommendation-score {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-green) 100%);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.recommendation-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.feature {
+    padding: var(--spacing-sm);
+    background: white;
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--accent-green);
+}
+
+.feature-label {
+    color: var(--gray-medium);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.feature-value {
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+
+.mood-badge {
+    display: inline-block;
+    background: var(--accent-green);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ============================================================================
+   14. INSIGHTS SECTION
+   ============================================================================ */
+.insights-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.insights-list {
+    display: grid;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.insight-item {
+    background: linear-gradient(135deg, var(--light-bg) 0%, white 100%);
+    padding: var(--spacing-md);
+    border-left: 3px solid var(--accent-blue);
+    border-radius: var(--radius-sm);
+    color: var(--gray-dark);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    animation: slideIn 0.4s ease-out backwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ============================================================================
+   15. BATTLE SECTION
+   ============================================================================ */
+.battle-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.battle-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: var(--spacing-lg) 0;
+    background: var(--light-bg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+}
+
+.battle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.battle-group label {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+}
+
+.select-input {
+    padding: var(--spacing-sm);
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
+    background: white;
+    color: var(--primary-dark);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.battle-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    animation: slideUp 0.5s ease-out;
+}
+
+.battle-card {
+    background: white;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.battle-card.winner {
+    border-color: var(--success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, white 100%);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.winner-badge {
+    display: inline-block;
+    background: var(--success);
+    color: white;
+    padding: 0.5rem 1.2rem;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.battle-song-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 0.25rem;
+}
+
+.battle-song-artist {
+    color: var(--gray-dark);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.battle-score {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+    margin: var(--spacing-md) 0;
+}
+
+.battle-metrics {
+    display: grid;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.battle-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: var(--light-bg);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--accent-blue);
+}
+
+.battle-metric-label {
+    font-weight: 600;
+    color: var(--gray-dark);
+}
+
+.battle-metric-value {
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-size: 1.1rem;
+}
+
+/* ============================================================================
+   16. ANALYTICS SECTION
+   ============================================================================ */
+.analytics-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.analytics-card {
+    background: linear-gradient(135deg, var(--light-bg) 0%, white 100%);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--gray-light);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.analytics-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--accent-blue);
+}
+
+.analytics-label {
+    font-size: 0.85rem;
+    color: var(--gray-medium);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+.analytics-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.analytics-subtext {
+    font-size: 0.8rem;
+    color: var(--gray-medium);
+    margin-top: 0.5rem;
+}
+
+.charts-container {
+    display: grid;
+    gap: var(--spacing-lg);
+}
+
+.chart {
+    background: var(--light-bg);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+}
+
+.chart-title {
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1rem;
+}
+
+.chart-bars {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-end;
+    height: 150px;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--accent-blue) 0%, var(--accent-green) 100%);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    min-height: 20px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.chart-bar:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 -4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.chart-bar-value {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: 700;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+}
+
+.chart-bar-label {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--gray-dark);
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   17. MOODS SECTION
+   ============================================================================ */
+.moods-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.moods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.mood-card {
+    background: linear-gradient(135deg, white 0%, var(--light-bg) 100%);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    border: 2px solid var(--gray-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.mood-card:hover {
+    border-color: var(--accent-green);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+}
+
+.mood-emoji {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.mood-name {
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.1rem;
+}
+
+.mood-count {
+    color: var(--gray-medium);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   18. ABOUT SECTION
+   ============================================================================ */
+.about-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.about-content {
+    color: var(--gray-dark);
+    line-height: 1.8;
+    max-width: 800px;
+}
+
+.about-content h4 {
+    color: var(--primary-dark);
+    margin-top: var(--spacing-lg);
+}
+
+.about-content h4:first-of-type {
+    margin-top: 0;
+}
+
+/* ============================================================================
+   19. FOOTER
+   ============================================================================ */
+.footer {
+    background: var(--primary-dark);
+    color: white;
+    padding: var(--spacing-xl) var(--spacing-md);
+    text-align: center;
+    margin-top: var(--spacing-xl);
+}
+
+.footer p {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+}
+
+/* ============================================================================
+   20. ANIMATIONS
+   ============================================================================ */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
+   21. UTILITIES
+   ============================================================================ */
+.hidden {
+    display: none !important;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid var(--danger);
+    color: var(--danger);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-md) 0;
+}
+
+.success-message {
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 3px solid var(--success);
+    color: var(--success);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-md) 0;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ============================================================================
+   22. RESPONSIVE DESIGN
+   ============================================================================ */
+@media (max-width: 768px) {
+    :root {
+        font-size: 15px;
+    }
+
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.6rem; }
+    h3 { font-size: 1.3rem; }
+
+    .header-title { font-size: 2rem; }
+
+    .hero-title { font-size: 1.8rem; }
+    .hero-subtitle { font-size: 1rem; }
+
+    .search-box {
+        flex-direction: column;
+    }
+
+    .search-input {
+        max-width: 100%;
+        min-width: auto;
+    }
+
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .battle-controls {
+        flex-direction: column;
+    }
+
+    .battle-group {
+        max-width: none;
+    }
+
+    .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chart-bars {
+        height: 120px;
+        margin-bottom: 50px;
+    }
+
+    .moods-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --spacing-xl: 2rem;
+        --spacing-lg: 1.5rem;
+        --spacing-md: 1rem;
+    }
+
+    .container {
+        padding: 0 var(--spacing-sm);
+    }
+
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.3rem; }
+    h3 { font-size: 1.1rem; }
+
+    .header-title { font-size: 1.5rem; }
+    .header-subtitle { font-size: 1rem; }
+
+    .hero-title { font-size: 1.5rem; }
+
+    .section-title { font-size: 1.3rem; }
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .moods-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .song-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .search-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+/* ============================================================================
+   23. PRINT STYLES
+   ============================================================================ */
+@media print {
+    body {
+        background: white;
+    }
+
+    .header {
+        display: none;
+    }
+
+    .footer {
+        display: none;
+    }
+
+    .btn {
+        display: none;
+    }
+}
