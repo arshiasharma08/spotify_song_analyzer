@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Intelligence Platform</title>
-    <!-- Flask static file linking - CRITICAL FOR PRODUCTION -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Three.js for 3D animated background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <!-- 3D ANIMATED BACKGROUND CANVAS -->
+    <div id="canvas-container"></div>
+    <div class="background-overlay"></div>
+
     <!-- NAVIGATION HEADER -->
     <header class="header">
         <div class="container">
-            <div class="header-content">
-                <h1 class="header-title">🎵 Audio Intelligence</h1>
-                <p class="header-subtitle">Advanced Music Analytics & Recommendation Engine</p>
-            </div>
+            <h1 class="logo">🎵 Audio Intelligence</h1>
+            <p class="tagline">Advanced Music Analytics & Recommendation Engine</p>
         </div>
     </header>
 
@@ -22,26 +25,29 @@
     <main class="main-content">
         <div class="container">
 
-            <!-- HERO SECTION -->
+            <!-- HERO SECTION WITH 3D BACKGROUND -->
             <section class="hero-section">
-                <h2 class="hero-title">Discover Music Intelligence</h2>
-                <p class="hero-subtitle">Search for a song and get AI-powered recommendations based on audio feature analysis</p>
-                
-                <!-- SEARCH BAR -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            class="search-input" 
-                            placeholder="Search by song title or artist name..."
-                            aria-label="Search songs"
-                        >
-                        <button id="searchBtn" class="btn btn-primary">
-                            🔍 Search
-                        </button>
+                <div class="hero-content">
+                    <h2 class="hero-title">Discover Your Next Favorite Song</h2>
+                    <p class="hero-subtitle">Powered by audio feature analysis and machine learning recommendation algorithms</p>
+                    
+                    <!-- SEARCH BAR -->
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                class="search-input" 
+                                placeholder="Search by song title or artist..."
+                                aria-label="Search songs"
+                            >
+                            <button id="searchBtn" class="btn btn-primary">
+                                <span class="btn-text">🔍 Search</span>
+                                <span class="btn-loader"></span>
+                            </button>
+                        </div>
+                        <p class="search-hint">Try: "levitating", "blinding lights", "drivers license"</p>
                     </div>
-                    <p class="search-hint">Try: "levitating", "blinding lights", "driver license"</p>
                 </div>
             </section>
 
@@ -49,7 +55,7 @@
             <section id="searchResultsSection" class="search-results-section" style="display: none;">
                 <h3 class="section-title">Search Results</h3>
                 <div id="searchResultsContainer" class="results-grid">
-                    <!-- Results will be populated by JavaScript -->
+                    <!-- Results populated by JavaScript -->
                 </div>
             </section>
 
@@ -63,10 +69,20 @@
                 </div>
             </section>
 
+            <!-- MOOD FILTER SECTION -->
+            <section id="moodFilterSection" class="mood-filter-section" style="display: none;">
+                <h3 class="section-title">Filter by Mood</h3>
+                <p class="section-subtitle">Click a mood to filter recommendations</p>
+                <div id="moodFilterContainer" class="mood-filter-grid">
+                    <!-- Mood filters populated by JavaScript -->
+                </div>
+                <button id="clearMoodFilter" class="btn btn-secondary" style="margin-top: 1.5rem;">Clear Filter</button>
+            </section>
+
             <!-- RECOMMENDATIONS SECTION -->
             <section id="recommendationsSection" class="recommendations-section" style="display: none;">
                 <h3 class="section-title">Recommended Songs</h3>
-                <p class="section-subtitle">Based on audio feature similarity analysis</p>
+                <p class="section-subtitle" id="recommendationsSubtitle">Based on audio feature similarity analysis</p>
                 <div id="recommendationsContainer" class="recommendations-grid">
                     <!-- Recommendations populated by JavaScript -->
                 </div>
@@ -101,7 +117,8 @@
                     </div>
 
                     <button id="battleBtn" class="btn btn-primary">
-                        ⚔️ Compare
+                        <span class="btn-text">⚔️ Compare</span>
+                        <span class="btn-loader"></span>
                     </button>
                 </div>
 
@@ -141,7 +158,7 @@
                     <h4>Recommendation Algorithm</h4>
                     <p>
                         This platform uses <strong>weighted Euclidean distance</strong> to measure similarity between songs.
-                        Each song is analyzed across four audio features:
+                        Each song is analyzed across four normalized audio features to find your next favorite track.
                     </p>
                     <ul>
                         <li><strong>Energy (0-1):</strong> Intensity and activity level</li>
@@ -150,18 +167,20 @@
                         <li><strong>Popularity (0-100):</strong> Relative popularity score</li>
                     </ul>
 
-                    <h4>Feature Normalization</h4>
+                    <h4>Why Normalization Matters</h4>
                     <p>
                         All metrics are normalized to a 0-1 scale for fair comparison. Without normalization,
                         a 20 BPM difference would overshadow a 0.2 energy difference, even though they're equally important.
                     </p>
-
-                    <h4>Weighted Scoring</h4>
-                    <p>
-                        Recommendations use weighted importance:
-                        Energy (30%) + Danceability (30%) + Tempo (20%) + Popularity (20%)
-                    </p>
                 </div>
+            </section>
+
+            <!-- PORTFOLIO SECTION -->
+            <section class="portfolio-section">
+                <p class="portfolio-text">
+                    Built as a <strong>Python Flask data science project</strong> exploring recommendation systems, 
+                    audio analytics, and full-stack web development integration.
+                </p>
             </section>
 
         </div>
@@ -174,7 +193,15 @@
         </div>
     </footer>
 
-    <!-- JavaScript - Flask static file linking - CRITICAL FOR PRODUCTION -->
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
