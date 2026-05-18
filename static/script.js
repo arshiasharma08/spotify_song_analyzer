@@ -187,16 +187,16 @@ function setupListeners() {
         console.error('❌ battleBtn not found');
     }
 
-    // Clear mood filter
-    const clearBtn = document.getElementById('clearMoodBtn');
-    if (clearBtn) {
-        console.log('✓ Found clearMoodBtn');
-        clearBtn.addEventListener('click', () => {
+    // Clear mood filter button
+    const clearMoodBtn = document.getElementById('clearMoodFilterBtn');
+    if (clearMoodBtn) {
+        console.log('✓ Found clearMoodFilterBtn');
+        clearMoodBtn.addEventListener('click', () => {
             console.log('🔄 CLEAR MOOD FILTER CLICKED');
             clearMoodFilter();
         });
     } else {
-        console.warn('clearMoodBtn not found (will be added dynamically)');
+        console.warn('clearMoodFilterBtn not found (will be created later)');
     }
 
     console.log('✓ Event listeners setup complete');
@@ -565,6 +565,8 @@ async function loadMoods() {
     
     // Extract all songs
     state.songs = [];
+    state.allMoods = result.moods;  // Store moods for filtering
+    
     Object.values(result.moods).forEach(songs => {
         state.songs.push(...songs);
     });
@@ -583,7 +585,7 @@ async function loadMoods() {
         'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
         'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
         'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '😢',
-        'Focus Mode': '🎯'
+        'Focus Mode': '🎯', 'Rap/Hip-Hop': '🎤', 'R&B Smooth': '💎'
     };
     
     Object.entries(result.moods).forEach(([mood, songs], idx) => {
@@ -592,6 +594,7 @@ async function loadMoods() {
         const card = document.createElement('div');
         card.className = 'mood-card';
         card.style.animationDelay = `${idx * 50}ms`;
+        card.setAttribute('data-mood', mood);  // Store mood name as data attribute
         
         const emoji = moodEmojis[mood] || '🎵';
         card.innerHTML = `
@@ -600,9 +603,10 @@ async function loadMoods() {
             <div class="mood-count">${songs.length} songs</div>
         `;
         
+        // Attach click event listener with mood filtering
         card.addEventListener('click', () => {
-            console.log(`🎭 MOOD CARD CLICKED: ${mood}`);
-            filterByMood(mood, result.moods);
+            console.log(`🎭 MOOD CARD CLICKED: "${mood}"`);
+            filterMoodSongs(mood, result.moods);
         });
         
         container.appendChild(card);
@@ -633,73 +637,135 @@ async function loadMoods() {
     }
 }
 
-function filterByMood(mood, allMoods) {
-    console.log(`🎭 filterByMood: ${mood}`);
+/**
+ * Filter and display songs by mood
+ * Shows results in the mood-filter-results section
+ */
+function filterMoodSongs(mood, allMoods) {
+    console.log(`🎭 filterMoodSongs called: "${mood}"`);
     
     state.selectedMood = mood;
     
-    // Update UI
+    // Get songs for this mood
+    const moodSongs = allMoods[mood] || [];
+    console.log(`Found ${moodSongs.length} songs for mood: ${mood}`);
+    
+    // Update mood card highlighting
     document.querySelectorAll('.mood-card').forEach(card => {
-        const name = card.querySelector('.mood-name');
-        if (name && name.textContent.trim() === mood) {
+        const cardMood = card.getAttribute('data-mood');
+        if (cardMood === mood) {
             card.classList.add('active');
-            console.log(`✓ Highlighted ${mood}`);
+            console.log(`✓ Highlighted ${mood} card`);
         } else {
             card.classList.remove('active');
         }
     });
     
-    const clearBtn = document.getElementById('clearMoodBtn');
-    if (clearBtn) {
-        clearBtn.classList.remove('hidden');
-        console.log('✓ Showing clear button');
-    }
+    // Show/update results section
+    const resultsSection = document.getElementById('moodFilterResults');
+    const resultsGrid = document.getElementById('moodFilterGrid');
+    const resultsTitle = document.getElementById('moodFilterTitle');
+    const clearBtn = document.getElementById('clearMoodFilterBtn');
     
-    // Filter recommendations
-    const filtered = state.currentRecommendations.filter(rec => rec.mood === mood);
-    console.log(`Filtered to ${filtered.length} recommendations`);
-    
-    if (filtered.length === 0) {
-        console.warn(`No recommendations for ${mood}`);
-        displayNoRecommendationsMessage(mood);
+    if (!resultsSection || !resultsGrid || !resultsTitle || !clearBtn) {
+        console.error('❌ Mood filter results elements not found');
         return;
     }
     
-    // Update summary
-    const summary = document.querySelector('.mood-summary');
-    if (summary) {
-        summary.innerHTML = `Filtering recommendations by <strong>${mood}</strong> mood (${filtered.length} songs)`;
-        summary.classList.remove('hidden');
-        console.log('✓ Showing mood summary');
+    // Update title
+    resultsTitle.textContent = `${mood} (${moodSongs.length} songs)`;
+    console.log(`✓ Updated title: ${mood}`);
+    
+    // Clear previous results
+    resultsGrid.innerHTML = '';
+    
+    if (moodSongs.length === 0) {
+        console.warn(`⚠️ No songs found for mood: ${mood}`);
+        
+        const messageEl = document.createElement('div');
+        messageEl.className = 'inline-message inline-message-info';
+        messageEl.style.gridColumn = '1 / -1';
+        
+        messageEl.innerHTML = `
+            <div class="inline-message-content">
+                <span class="inline-message-icon">🎭</span>
+                <div class="inline-message-body">
+                    <span class="inline-message-text">
+                        No songs found for <strong>${escapeHtml(mood)}</strong> mood.
+                    </span>
+                    <span class="inline-message-subtext">
+                        Try selecting a different mood.
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        resultsGrid.appendChild(messageEl);
+    } else {
+        // Display mood songs as cards
+        moodSongs.forEach((song, idx) => {
+            const card = document.createElement('div');
+            card.className = 'mood-song-card';
+            card.style.animationDelay = `${idx * 50}ms`;
+            
+            card.innerHTML = `
+                <h4>${escapeHtml(song.title)}</h4>
+                <p>${escapeHtml(song.artist)}</p>
+                <div class="mood-song-metrics">
+                    <div class="mood-song-metric">
+                        <div class="mood-song-metric-label">⚡ Energy</div>
+                        <div class="mood-song-metric-value">${song.energy.toFixed(2)}</div>
+                    </div>
+                    <div class="mood-song-metric">
+                        <div class="mood-song-metric-label">💃 Dance</div>
+                        <div class="mood-song-metric-value">${song.danceability.toFixed(2)}</div>
+                    </div>
+                    <div class="mood-song-metric">
+                        <div class="mood-song-metric-label">🎼 Tempo</div>
+                        <div class="mood-song-metric-value">${song.tempo}</div>
+                    </div>
+                    <div class="mood-song-metric">
+                        <div class="mood-song-metric-label">⭐ Pop</div>
+                        <div class="mood-song-metric-value">${song.popularity}</div>
+                    </div>
+                </div>
+            `;
+            
+            resultsGrid.appendChild(card);
+        });
+        
+        console.log(`✓ Displayed ${moodSongs.length} mood songs`);
     }
     
-    displayRecommendations(filtered);
+    // Show results section
+    resultsSection.classList.remove('hidden');
+    console.log('✓ Mood filter results section visible');
+    
+    // Smooth scroll to results
+    setTimeout(() => {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
 }
 
+/**
+ * Clear mood filter and hide results
+ */
 function clearMoodFilter() {
     console.log('🔄 clearMoodFilter called');
     
     state.selectedMood = null;
     
+    // Remove highlighting from all mood cards
     document.querySelectorAll('.mood-card').forEach(card => {
         card.classList.remove('active');
     });
+    console.log('✓ Cleared mood highlights');
     
-    const clearBtn = document.getElementById('clearMoodBtn');
-    if (clearBtn) {
-        clearBtn.classList.add('hidden');
-        console.log('✓ Hiding clear button');
-    }
-    
-    const summary = document.querySelector('.mood-summary');
-    if (summary) {
-        summary.classList.add('hidden');
-        console.log('✓ Hiding mood summary');
-    }
-    
-    if (state.currentRecommendations.length > 0) {
-        console.log('✓ Showing all recommendations');
-        displayRecommendations(state.currentRecommendations);
+    // Hide results section
+    const resultsSection = document.getElementById('moodFilterResults');
+    if (resultsSection) {
+        resultsSection.classList.add('hidden');
+        console.log('✓ Hidden mood filter results');
     }
 }
 
