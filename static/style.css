@@ -1320,5 +1320,25 @@ input, select { font: inherit; color: inherit; }
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
-    }
+       /* Spotify button */
+       
+.spotify-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: #1DB954;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 180ms ease;
 }
+
+.spotify-btn:hover {
+    background: #1ed760;
+    transform: translateY(-1px);
+}
+   
