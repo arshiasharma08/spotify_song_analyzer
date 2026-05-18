@@ -61,13 +61,20 @@
             <section id="moodSection" class="section">
                 <div class="section-header">
                     <h3 class="section-title">Mood Classification</h3>
-                    <button id="clearMoodBtn" class="btn btn-secondary btn-small hidden">
-                        Clear Filter
-                    </button>
                 </div>
-                <p class="section-subtitle">Click a mood to filter recommendations</p>
+                <p class="section-subtitle">Click a mood to see songs in that category</p>
                 <div id="moodGrid" class="mood-grid"></div>
-                <div id="moodSummary" class="mood-summary hidden"></div>
+                
+                <!-- MOOD FILTER RESULTS - Shows filtered songs by mood -->
+                <div id="moodFilterResults" class="mood-filter-results hidden">
+                    <div class="mood-filter-header">
+                        <h4 id="moodFilterTitle" class="mood-filter-title"></h4>
+                        <button id="clearMoodFilterBtn" class="btn btn-secondary btn-small">
+                            Clear Filter
+                        </button>
+                    </div>
+                    <div id="moodFilterGrid" class="mood-filter-grid"></div>
+                </div>
             </section>
 
             <!-- RECOMMENDATIONS SECTION -->
@@ -178,8 +185,7 @@
                         Energy (30%) + Danceability (30%) + Tempo (20%) + Popularity (20%).
                     </p>
                     <p>
-                        Click mood cards to filter recommendations by vibe,
-                        or use Song Battle to compare any two tracks across all metrics.
+                        Click mood cards to filter songs by vibe, search for specific tracks, or use Song Battle to compare any two tracks.
                     </p>
                 </div>
             </section>
