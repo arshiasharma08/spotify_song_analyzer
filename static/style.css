@@ -1320,19 +1320,5 @@ input, select { font: inherit; color: inherit; }
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
-
-.spotify-btn {
-    display: inline-flex;
-    margin-top: 1rem;
-    padding: 0.5rem 0.9rem;
-    border-radius: 999px;
-    background: #1DB954;
-    color: white;
-    font-size: 0.8rem;
-    font-weight: 600;
+    }
 }
-
-.spotify-btn:hover {
-    background: #1ed760;
-}
-
