@@ -1322,3 +1322,321 @@ input, select { font: inherit; color: inherit; }
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ============================================================================
+   POLISH & UX IMPROVEMENTS
+   Enhanced hover effects, nav styling, spacing, and mood filtering
+   ============================================================================ */
+
+/* NAV IMPROVEMENTS */
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-link {
+    position: relative;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    transition: color var(--t-fast);
+    font-weight: 500;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1rem;
+    width: calc(100% - 2rem);
+    height: 2px;
+    background: var(--grad-primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--t-fast);
+    opacity: 0;
+}
+
+.nav-link:hover {
+    color: var(--cyan);
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+    transform: scaleX(1);
+    transform-origin: left;
+    opacity: 1;
+}
+
+.nav-link.active {
+    color: var(--cyan);
+}
+
+/* HOVER EFFECTS - Cards */
+.mood-card,
+.result-card,
+.stat-card,
+.chart-card,
+.rec-card {
+    position: relative;
+    transition: all var(--t-med);
+    overflow: hidden;
+}
+
+.mood-card:hover,
+.result-card:hover,
+.chart-card:hover,
+.rec-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--cyan);
+    box-shadow: 0 24px 64px rgba(0, 229, 255, 0.25), var(--shadow-glow);
+}
+
+.stat-card:hover {
+    border-color: var(--purple);
+    box-shadow: 0 24px 64px rgba(162, 107, 255, 0.2), var(--shadow-glow);
+}
+
+/* BUTTON HOVER EFFECTS */
+.btn {
+    position: relative;
+    transition: all var(--t-med);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+        rgba(255, 255, 255, 0.2) 0%, transparent 80%);
+    opacity: 0;
+    transition: opacity var(--t-fast);
+    border-radius: inherit;
+}
+
+.btn:hover::before {
+    opacity: 1;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 48px rgba(0, 229, 255, 0.3), var(--shadow-glow);
+}
+
+.btn-secondary:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.1);
+}
+
+/* MOOD CARD PREMIUM HOVER */
+.mood-card {
+    border: 2px solid var(--border);
+}
+
+.mood-card:hover {
+    background: var(--surface-strong);
+    border-color: var(--cyan);
+}
+
+.mood-card:hover .mood-name {
+    color: var(--cyan);
+}
+
+/* MOOD FILTER RESULTS SECTION */
+.mood-filter-results {
+    margin-top: 3rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(162, 107, 255, 0.04));
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    animation: slideUp 0.5s var(--ease);
+}
+
+.mood-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+}
+
+.mood-results-header h3 {
+    font-size: 1.3rem;
+    color: var(--cyan);
+    margin: 0;
+}
+
+.mood-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.mood-song-card {
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    transition: all var(--t-med);
+}
+
+.mood-song-card:hover {
+    border-color: var(--green);
+    background: var(--surface-strong);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(77, 255, 179, 0.15), var(--shadow-glow);
+}
+
+.mood-song-card h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+    color: var(--cyan);
+}
+
+.mood-song-card p {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.mood-song-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+}
+
+.mood-metric {
+    padding: 0.7rem;
+    background: rgba(0, 229, 255, 0.06);
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+}
+
+.mood-metric-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+}
+
+.mood-metric-value {
+    font-size: 1.1rem;
+    color: var(--cyan);
+    font-weight: 600;
+}
+
+/* SPACING IMPROVEMENTS */
+.section-header {
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    margin-bottom: 0.8rem;
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-subtext {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Improve section spacing */
+.moods-section,
+.dashboard-section,
+.battle-section {
+    padding: 4rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.moods-section:first-of-type {
+    padding-top: 5rem;
+    border-top: none;
+}
+
+/* SMOOTH TRANSITIONS */
+main section {
+    animation: fadeIn 0.6s var(--ease) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* INPUT FOCUS STATES */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: inset 0 0 0 1px var(--cyan), 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+    .nav-links {
+        gap: 0.8rem;
+    }
+
+    .nav-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .mood-filter-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .mood-results-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mood-results-header button {
+        width: 100%;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .section-subtext {
+        font-size: 0.9rem;
+    }
+
+    .moods-section,
+    .dashboard-section,
+    .battle-section {
+        padding: 2.5rem 0;
+    }
+}
+
