@@ -541,3 +541,105 @@ function escapeHtml(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[ch]));
 }
+
+// ============================================================================
+// MOOD FILTERING - Display filtered songs when mood is clicked
+// ============================================================================
+
+function displayMoodSongs(mood, songs) {
+    console.log(`🎭 Displaying ${songs.length} songs for ${mood}`);
+    
+    const resultsSection = document.getElementById('moodFilterResults');
+    const resultsGrid = document.getElementById('moodFilterGrid');
+    const resultsTitle = document.getElementById('moodResultsTitle');
+    const clearBtn = document.getElementById('clearMoodFilterBtn');
+    
+    if (!resultsSection || !resultsGrid) return;
+    
+    resultsTitle.textContent = `${mood} (${songs.length} songs)`;
+    resultsGrid.innerHTML = '';
+    
+    songs.forEach((song, i) => {
+        const card = document.createElement('div');
+        card.className = 'mood-song-card';
+        card.style.animationDelay = `${i * 30}ms`;
+        
+        card.innerHTML = `
+            <h4>${escapeHtml(song.title)}</h4>
+            <p>${escapeHtml(song.artist)}</p>
+            <div class="mood-song-metrics">
+                <div class="mood-metric">
+                    <div class="mood-metric-label">Energy</div>
+                    <div class="mood-metric-value">${song.energy.toFixed(2)}</div>
+                </div>
+                <div class="mood-metric">
+                    <div class="mood-metric-label">Dance</div>
+                    <div class="mood-metric-value">${song.danceability.toFixed(2)}</div>
+                </div>
+                <div class="mood-metric">
+                    <div class="mood-metric-label">Tempo</div>
+                    <div class="mood-metric-value">${song.tempo}</div>
+                </div>
+                <div class="mood-metric">
+                    <div class="mood-metric-label">Pop</div>
+                    <div class="mood-metric-value">${song.popularity}</div>
+                </div>
+            </div>
+        `;
+        resultsGrid.appendChild(card);
+    });
+    
+    resultsSection.classList.remove('hidden');
+    clearBtn.addEventListener('click', clearMoodFilter);
+    
+    setTimeout(() => {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+}
+
+function clearMoodFilter() {
+    const resultsSection = document.getElementById('moodFilterResults');
+    if (resultsSection) {
+        resultsSection.classList.add('hidden');
+    }
+    document.querySelectorAll('.mood-card').forEach(card => {
+        card.classList.remove('active');
+    });
+}
+
+// ============================================================================
+// NAV HIGHLIGHTING - Show active section as user scrolls
+// ============================================================================
+
+function updateNavActive() {
+    const scrollY = window.scrollY;
+    const sections = [
+        { id: 'search', nav: 'search', offset: 0 },
+        { id: 'moods', nav: 'moods', offset: 800 },
+        { id: 'dashboard', nav: 'dashboard', offset: 1600 },
+        { id: 'battle', nav: 'battle', offset: 2400 }
+    ];
+    
+    const active = sections.find(s => scrollY >= s.offset) || sections[0];
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-nav') === active.nav) {
+            link.classList.add('active');
+        }
+    });
+}
+
+window.addEventListener('scroll', updateNavActive, { passive: true });
+
+// ============================================================================
+// HELPER
+// ============================================================================
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+console.log('✓ Polish & mood filtering initialized');
