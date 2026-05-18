@@ -1090,3 +1090,126 @@ main {
         font-size: 0.7rem;
     }
 }
+
+/* ============================================================================
+   MOOD FILTER RESULTS - Shows filtered songs by mood
+   ============================================================================ */
+
+.mood-filter-results {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(163, 102, 255, 0.05));
+    border: 2px solid var(--accent-cyan);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-top: 2rem;
+    animation: slideDown 0.4s ease-out;
+}
+
+.mood-filter-results.hidden {
+    display: none;
+}
+
+.mood-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.mood-filter-title {
+    font-size: 1.3rem;
+    color: var(--accent-cyan);
+    margin: 0;
+    font-weight: 700;
+}
+
+.mood-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.mood-song-card {
+    background: rgba(45, 90, 140, 0.2);
+    border: 2px solid var(--accent-cyan);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: var(--transition);
+    animation: slideUp 0.5s ease-out backwards;
+}
+
+.mood-song-card:nth-child(1) { animation-delay: 0.1s; }
+.mood-song-card:nth-child(2) { animation-delay: 0.15s; }
+.mood-song-card:nth-child(3) { animation-delay: 0.2s; }
+.mood-song-card:nth-child(4) { animation-delay: 0.25s; }
+.mood-song-card:nth-child(5) { animation-delay: 0.3s; }
+.mood-song-card:nth-child(n+6) { animation-delay: 0.35s; }
+
+.mood-song-card:hover {
+    border-color: var(--accent-green);
+    background: rgba(0, 217, 255, 0.15);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.mood-song-card h4 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin: 0 0 0.3rem 0;
+}
+
+.mood-song-card p {
+    color: var(--text-tertiary);
+    margin: 0.3rem 0 1rem 0;
+    font-size: 0.9rem;
+}
+
+.mood-song-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+}
+
+.mood-song-metric {
+    background: rgba(0, 217, 255, 0.1);
+    padding: 0.7rem;
+    border-radius: 6px;
+    border-left: 2px solid var(--accent-cyan);
+}
+
+.mood-song-metric-label {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+}
+
+.mood-song-metric-value {
+    font-size: 1.1rem;
+    color: var(--accent-cyan);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .mood-filter-results {
+        padding: 1.5rem;
+    }
+
+    .mood-filter-title {
+        font-size: 1.1rem;
+    }
+
+    .mood-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mood-filter-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mood-filter-header button {
+        width: 100%;
+    }
+}
