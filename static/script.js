@@ -201,27 +201,32 @@ function buildResultCard(song, i = 0) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.style.animationDelay = `${i * 50}ms`;
+
     card.innerHTML = `
         <h4>${escapeHtml(song.title)}</h4>
         <p>${escapeHtml(song.artist)}</p>
+
         <div class="metrics-row">
             <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
             <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
             <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
             <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
-        </div>`;
+        </div>
+
+        ${song.spotify_url ? `
+            <a href="${song.spotify_url}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="spotify-btn"
+               onclick="event.stopPropagation();">
+               Listen on Spotify
+            </a>
+        ` : ''}
+    `;
+
     card.addEventListener('click', () => selectSong(song));
     return card;
-`;
 }
-return `
-    <div class="result-card" data-song-id="${song.id}">
-        <h4>${song.title}</h4>
-        <p>${song.artist}</p>
-        ${metrics}
-        ${spotifyButton}
-    </div>
-`;
 
 /* ============================================================================
    SELECT SONG → RECS + INSIGHTS
@@ -549,30 +554,4 @@ function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, ch => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[ch]));
-   function createSpotifyButton(song) {
-    if (!song.spotify_url) return '';
-    
-    return 
-      return `
-    <div class="result-card" data-song-id="${song.id}">
-        <h4>${song.title}</h4>
-        <p>${song.artist}</p>
-        ${metrics}
-        ${spotifyButton}
-    </div>
-`;
-        <a 
-            href="${song.spotify_url}" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="spotify-btn"
-            onclick="event.stopPropagation()"
-            title="Listen on Spotify">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-12.061-1.419-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.49 9.18 15.47 9.859 19.14 12.21c.361.22.601.719.301 1.119zm.179-3.42c-3.9-2.32-10.34-2.592-14.061-1.436-.479.13-1.023-.264-1.153-.736-.13-.479.266-1.025.736-1.154 4.12-1.271 11.234-.973 15.771 1.66.36.22.559.698.3 1.119-.259.421-.841.539-1.2.318z"/>
-            </svg>
-            Listen on Spotify
-        </a>
-    `;
 }
-
