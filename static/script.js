@@ -236,6 +236,27 @@ async function selectSong(song) {
             </div>`;
     }
     document.getElementById('selectedSongSection')?.classList.remove('hidden');
+    // Spotify Player
+const spotifyPlayer = document.getElementById("spotify-player");
+
+if (spotifyPlayer && song.spotify_track_id) {
+    spotifyPlayer.classList.remove("hidden");
+
+    spotifyPlayer.innerHTML = `
+        <iframe
+            style="border-radius:12px"
+            src="https://open.spotify.com/embed/track/${song.spotify_track_id}"
+            width="100%"
+            height="152"
+            frameBorder="0"
+            allowfullscreen=""
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy">
+        </iframe>
+    `;
+} else if (spotifyPlayer) {
+    spotifyPlayer.classList.add("hidden");
+}
 
     await Promise.all([
         getRecommendations(song.id),
