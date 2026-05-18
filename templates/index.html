@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Intelligence Platform</title>
+    <!-- Flask static file linking - CRITICAL FOR PRODUCTION -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- NAVIGATION HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="header-title">🎵 Audio Intelligence</h1>
+                <p class="header-subtitle">Advanced Music Analytics & Recommendation Engine</p>
+            </div>
+        </div>
+    </header>
 
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="container">
+
+            <!-- HERO SECTION -->
+            <section class="hero-section">
+                <h2 class="hero-title">Discover Music Intelligence</h2>
+                <p class="hero-subtitle">Search for a song and get AI-powered recommendations based on audio feature analysis</p>
+                
+                <!-- SEARCH BAR -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input" 
+                            placeholder="Search by song title or artist name..."
+                            aria-label="Search songs"
+                        >
+                        <button id="searchBtn" class="btn btn-primary">
+                            🔍 Search
+                        </button>
+                    </div>
+                    <p class="search-hint">Try: "levitating", "blinding lights", "driver license"</p>
+                </div>
+            </section>
+
+            <!-- SEARCH RESULTS SECTION -->
+            <section id="searchResultsSection" class="search-results-section" style="display: none;">
+                <h3 class="section-title">Search Results</h3>
+                <div id="searchResultsContainer" class="results-grid">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- SELECTED SONG INFO SECTION -->
+            <section id="selectedSongSection" class="selected-song-section" style="display: none;">
+                <div class="selected-song-card">
+                    <h3>Currently Analyzing</h3>
+                    <div id="selectedSongInfo" class="song-metrics-grid">
+                        <!-- Song info populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- RECOMMENDATIONS SECTION -->
+            <section id="recommendationsSection" class="recommendations-section" style="display: none;">
+                <h3 class="section-title">Recommended Songs</h3>
+                <p class="section-subtitle">Based on audio feature similarity analysis</p>
+                <div id="recommendationsContainer" class="recommendations-grid">
+                    <!-- Recommendations populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- INSIGHTS SECTION -->
+            <section id="insightsSection" class="insights-section" style="display: none;">
+                <h3 class="section-title">AI Insights</h3>
+                <div id="insightsContainer" class="insights-list">
+                    <!-- Insights populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- SONG BATTLE SECTION -->
+            <section id="battleSection" class="battle-section" style="display: none;">
+                <h3 class="section-title">Song Battle</h3>
+                <p class="section-subtitle">Compare two songs head-to-head</p>
+                
+                <div class="battle-controls">
+                    <div class="battle-group">
+                        <label for="battleSong1">Song 1</label>
+                        <select id="battleSong1" class="select-input">
+                            <option value="">Select a song...</option>
+                        </select>
+                    </div>
+
+                    <div class="battle-group">
+                        <label for="battleSong2">Song 2</label>
+                        <select id="battleSong2" class="select-input">
+                            <option value="">Select a song...</option>
+                        </select>
+                    </div>
+
+                    <button id="battleBtn" class="btn btn-primary">
+                        ⚔️ Compare
+                    </button>
+                </div>
+
+                <div id="battleResultsContainer" class="battle-results" style="display: none;">
+                    <!-- Battle results populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- ANALYTICS SECTION -->
+            <section id="analyticsSection" class="analytics-section" style="display: none;">
+                <h3 class="section-title">Analytics Dashboard</h3>
+                <p class="section-subtitle">Overall statistics for your music collection</p>
+                
+                <div id="analyticsSummary" class="analytics-grid">
+                    <!-- Summary cards populated by JavaScript -->
+                </div>
+
+                <div id="analyticsCharts" class="charts-container">
+                    <!-- Charts populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- MOODS SECTION -->
+            <section id="moodsSection" class="moods-section" style="display: none;">
+                <h3 class="section-title">Mood Classification</h3>
+                <p class="section-subtitle">Songs automatically classified by detected mood</p>
+                
+                <div id="moodsContainer" class="moods-grid">
+                    <!-- Moods populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- ABOUT SECTION -->
+            <section class="about-section">
+                <h3 class="section-title">How This Works</h3>
+                <div class="about-content">
+                    <h4>Recommendation Algorithm</h4>
+                    <p>
+                        This platform uses <strong>weighted Euclidean distance</strong> to measure similarity between songs.
+                        Each song is analyzed across four audio features:
+                    </p>
+                    <ul>
+                        <li><strong>Energy (0-1):</strong> Intensity and activity level</li>
+                        <li><strong>Danceability (0-1):</strong> Suitability for dancing</li>
+                        <li><strong>Tempo (BPM):</strong> Speed in beats per minute</li>
+                        <li><strong>Popularity (0-100):</strong> Relative popularity score</li>
+                    </ul>
+
+                    <h4>Feature Normalization</h4>
+                    <p>
+                        All metrics are normalized to a 0-1 scale for fair comparison. Without normalization,
+                        a 20 BPM difference would overshadow a 0.2 energy difference, even though they're equally important.
+                    </p>
+
+                    <h4>Weighted Scoring</h4>
+                    <p>
+                        Recommendations use weighted importance:
+                        Energy (30%) + Danceability (30%) + Tempo (20%) + Popularity (20%)
+                    </p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Audio Intelligence Platform. Music analytics powered by data science.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript - Flask static file linking - CRITICAL FOR PRODUCTION -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
