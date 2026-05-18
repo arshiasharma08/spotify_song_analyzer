@@ -174,12 +174,12 @@ async function handleSearch() {
 
 function renderSearchResults(results) {
     const list = document.getElementById('resultsList');
-    const section = document.getElementById('results');
+    const section = document.getElementById('searchResults');
     const count = document.getElementById('resultsCount');
     if (!list || !section) return;
 
     list.innerHTML = '';
-    if (count) count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
+    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
 
     if (results.length === 0) {
         list.innerHTML = `
@@ -223,7 +223,7 @@ async function selectSong(song) {
     document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
     document.getElementById('moodFilterResults')?.classList.add('hidden');
 
-    const card = document.getElementById('selectedSongDetail');
+    const card = document.getElementById('selectedSongCard');
     if (card) {
         card.innerHTML = `
             <h3 class="song-title">${escapeHtml(song.title)}</h3>
@@ -235,9 +235,7 @@ async function selectSong(song) {
                 <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
             </div>`;
     }
-    document.getElementById('song-detail')?.classList.remove('hidden');
-
-    displaySpotifyPlayer(song);
+    document.getElementById('selectedSongSection')?.classList.remove('hidden');
 
     await Promise.all([
         getRecommendations(song.id),
@@ -245,7 +243,7 @@ async function selectSong(song) {
     ]);
 
     setTimeout(() => {
-        document.getElementById('song-detail')
+        document.getElementById('selectedSongSection')
             ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
 }
@@ -257,13 +255,13 @@ async function getRecommendations(songId) {
 }
 
 function renderRecommendations(recs) {
-    const grid = document.getElementById('recommendationsList');
+    const grid = document.getElementById('recommendationsGrid');
     const section = document.getElementById('recommendationsSection');
     if (!grid || !section) return;
     grid.innerHTML = '';
 
     recs.forEach((rec, i) => {
-        const confidence = Math.round(((rec.similarity_score ?? rec.similarity ?? 0) * 100));
+        const confidence = Math.round((rec.similarity_score || 0) * 100);
         const reason = reasonFor(confidence);
         const card = document.createElement('div');
         card.className = 'rec-card';
@@ -357,15 +355,15 @@ function filterByMood(mood, cardEl) {
     const empty = document.getElementById('moodEmptyState');
     if (!wrap || !grid) return;
 
-    if (title) title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
-    if (meta) meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
+    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
+    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
     grid.innerHTML = '';
 
     if (songs.length === 0) {
-        if (empty) empty.classList.remove('hidden');
+        empty.classList.remove('hidden');
         grid.classList.add('hidden');
     } else {
-        if (empty) empty.classList.add('hidden');
+        empty.classList.add('hidden');
         grid.classList.remove('hidden');
         songs.forEach((s, i) => {
             // mood payload may lack tempo/popularity — fall back to full songs list
@@ -504,8 +502,8 @@ function renderBattle(r) {
     if (!wrap) return;
     const s1 = r.song1 || {};
     const s2 = r.song2 || {};
-    const winnerIs1 = r.winner === 'song1' || (r.winner && r.winner.id === s1.id);
-    const winner = winnerIs1 ? s1 : s2;
+    const winner = r.winner || {};
+    const winnerIs1 = winner.id === s1.id;
 
     wrap.innerHTML = `
         <div class="battle-winner">
@@ -536,51 +534,10 @@ function battleSide(s, isWinner) {
 /* ============================================================================
    UTIL
    ============================================================================ */
-
-function setText(id, v) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = v;
-}
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
 function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[ch]));
-}
-
-function displaySpotifyPlayer(song) {
-    const playerContainer = document.getElementById('spotify-player');
-
-    if (!playerContainer) return;
-
-    if (!song.spotify_track_id) {
-        playerContainer.innerHTML = `
-            <div class="spotify-player-message">
-                Spotify preview not available for this track yet.
-            </div>
-        `;
-        playerContainer.classList.remove('hidden');
-        return;
-    }
-
-    const spotifyUrl = `https://open.spotify.com/embed/track/${song.spotify_track_id}`;
-
-    playerContainer.innerHTML = `
-        <iframe
-            style="border-radius:12px"
-            src="${spotifyUrl}"
-            width="100%"
-            height="152"
-            frameBorder="0"
-            allowfullscreen=""
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy">
-        </iframe>
-    `;
-
-    playerContainer.classList.remove('hidden');
 }
