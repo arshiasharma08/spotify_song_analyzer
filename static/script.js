@@ -236,6 +236,8 @@ async function selectSong(song) {
             </div>`;
     }
     document.getElementById('selectedSongSection')?.classList.remove('hidden');
+   
+    displaySpotifyPlayer(song);
 
     await Promise.all([
         getRecommendations(song.id),
@@ -530,45 +532,59 @@ function battleSide(s, isWinner) {
             </div>
         </div>`;
 }
-
 /* ============================================================================
    UTIL
    ============================================================================ */
-function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+function setText(id, v) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+}
 
 function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
     }[ch]));
-   function displaySpotifyPlayer(song) {
+}
+
+function displaySpotifyPlayer(song) {
     const playerContainer = document.getElementById('spotify-player');
+
     if (!playerContainer) return;
-    
-    // If no spotify_track_id, show message
+
     if (!song.spotify_track_id) {
-        playerContainer.innerHTML = '<div class="spotify-player-message">Spotify preview not available for this track yet.</div>';
+        playerContainer.innerHTML = `
+            <div class="spotify-player-message">
+                Spotify preview not available for this track yet.
+            </div>
+        `;
+
         playerContainer.classList.remove('hidden');
         return;
     }
-    
-    // Build Spotify embed URL
-    const spotifyUrl = `https://open.spotify.com/embed/track/${song.spotify_track_id}`;
-    
-    // Create iframe
+
+    const spotifyUrl =
+        `https://open.spotify.com/embed/track/${song.spotify_track_id}`;
+
     playerContainer.innerHTML = `
-        <iframe 
-            style="border-radius: 12px;" 
-            src="${spotifyUrl}" 
-            width="100%" 
-            height="152" 
-            frameBorder="0" 
-            allowfullscreen="" 
+        <iframe
+            style="border-radius:12px"
+            src="${spotifyUrl}"
+            width="100%"
+            height="152"
+            frameBorder="0"
+            allowfullscreen=""
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy">
         </iframe>
     `;
-    
-    // Show player
+
     playerContainer.classList.remove('hidden');
-   }    
 }
+
+
+
