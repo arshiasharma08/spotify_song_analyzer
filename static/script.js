@@ -201,46 +201,16 @@ function buildResultCard(song, i = 0) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.style.animationDelay = `${i * 50}ms`;
-
     card.innerHTML = `
         <h4>${escapeHtml(song.title)}</h4>
         <p>${escapeHtml(song.artist)}</p>
-
         <div class="metrics-row">
-            <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-value">${song.energy.toFixed(2)}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Dance</div>
-                <div class="metric-value">${song.danceability.toFixed(2)}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Tempo</div>
-                <div class="metric-value">${song.tempo}</div>
-            </div>
-
-            <div class="metric">
-                <div class="metric-label">Pop</div>
-                <div class="metric-value">${song.popularity}</div>
-            </div>
-        </div>
-
-        ${song.spotify_url ? `
-            <a href="${song.spotify_url}"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="spotify-btn"
-               onclick="event.stopPropagation();">
-               Listen on Spotify
-            </a>
-        ` : ''}
-    `;
-
+            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
+            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
+            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
+        </div>`;
     card.addEventListener('click', () => selectSong(song));
-
     return card;
 }
 
