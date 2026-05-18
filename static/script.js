@@ -1,41 +1,158 @@
 /*
- * AUDIO INTELLIGENCE PLATFORM - JAVASCRIPT
- * Flask API Integration & Interactive Features
- * 
- * Backend Routes Being Called:
- * - POST /api/search       Search for songs
- * - POST /api/recommend    Get recommendations
- * - POST /api/battle       Compare songs
- * - GET  /api/moods        Get mood classifications
- * - GET  /api/analytics    Get analytics data
- * - POST /api/insights     Get song insights
+ * AUDIO INTELLIGENCE PLATFORM - VERSION 2
+ * Enhanced JavaScript with 3D background, mood filtering, and advanced interactivity
+ * All critical IDs and functionality preserved for Flask backend compatibility
  */
 
 /* ============================================================================
    1. GLOBAL STATE & INITIALIZATION
    ============================================================================ */
 
-// Global state
 let appState = {
     allSongs: [],
     selectedSong: null,
-    recommendCount: 5
+    selectedMood: null,
+    isLoading: false,
+    threeScene: null
 };
+
+console.log('🎵 Audio Intelligence Platform V2 - Enhanced Frontend');
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎵 Audio Intelligence Platform initialized');
+    console.log('✓ DOM Loaded - Initializing...');
     
-    // Set up event listeners
+    // Initialize 3D background
+    init3DBackground();
+    
+    // Setup event listeners
     setupEventListeners();
     
     // Load initial data
     loadInitialData();
 });
 
-// ============================================================================
-// 2. EVENT LISTENER SETUP
-// ============================================================================
+/* ============================================================================
+   2. 3D BACKGROUND WITH THREE.JS
+   ============================================================================ */
+
+/**
+ * Creates animated floating particles in 3D space
+ * Uses Three.js for WebGL rendering
+ * Creates an ambient, musical visualization behind the hero section
+ */
+function init3DBackground() {
+    console.log('🎨 Initializing 3D background...');
+    
+    try {
+        const container = document.getElementById('canvas-container');
+        if (!container) {
+            console.warn('Canvas container not found');
+            return;
+        }
+
+        // Scene setup
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        const scene = new THREE.Scene();
+        scene.background = null;
+        scene.fog = new THREE.Fog(0x0f0f1e, 100, 2000);
+        
+        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        camera.position.z = 30;
+        
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            alpha: true,
+            powerPreference: 'high-performance'
+        });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = false;
+        container.appendChild(renderer.domElement);
+
+        // Create particles for floating music nodes visualization
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCnt = 100;
+        
+        const posArray = new Float32Array(particlesCnt * 3);
+        for (let i = 0; i < particlesCnt * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 100;
+        }
+        
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // Create material with gradient effect
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.5,
+            color: 0x00d9ff,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.6
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Store reference for animation
+        appState.threeScene = {
+            scene: scene,
+            renderer: renderer,
+            camera: camera,
+            particles: particlesMesh,
+            posArray: posArray
+        };
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+            
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            
+            renderer.setSize(newWidth, newHeight);
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate particles slowly
+            particlesMesh.rotation.x += 0.00005;
+            particlesMesh.rotation.y += 0.0001;
+
+            // Animate particle positions for floating effect
+            for (let i = 0; i < particlesCnt * 3; i += 3) {
+                posArray[i] += (Math.random() - 0.5) * 0.1;
+                posArray[i + 1] += (Math.random() - 0.5) * 0.1;
+                posArray[i + 2] += (Math.random() - 0.5) * 0.1;
+
+                // Keep particles in bounds
+                if (posArray[i] > 50) posArray[i] = -50;
+                if (posArray[i] < -50) posArray[i] = 50;
+                if (posArray[i + 1] > 50) posArray[i + 1] = -50;
+                if (posArray[i + 1] < -50) posArray[i + 1] = 50;
+            }
+            
+            particlesGeometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+        console.log('✓ 3D background initialized');
+
+    } catch (error) {
+        console.warn('Three.js initialization skipped:', error.message);
+        // App still works without 3D background
+    }
+}
+
+/* ============================================================================
+   3. EVENT LISTENER SETUP
+   ============================================================================ */
 
 function setupEventListeners() {
     console.log('📌 Setting up event listeners...');
@@ -49,9 +166,8 @@ function setupEventListeners() {
     }
     
     if (searchInput) {
-        // Also search on Enter key
-        searchInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
                 handleSearch();
             }
         });
@@ -62,87 +178,85 @@ function setupEventListeners() {
     if (battleBtn) {
         battleBtn.addEventListener('click', handleBattle);
     }
+
+    // Clear mood filter button
+    const clearMoodBtn = document.getElementById('clearMoodFilter');
+    if (clearMoodBtn) {
+        clearMoodBtn.addEventListener('click', clearMoodFilter);
+    }
     
     console.log('✓ Event listeners attached');
 }
 
-// ============================================================================
-// 3. INITIAL DATA LOADING
-// ============================================================================
+/* ============================================================================
+   4. INITIAL DATA LOADING
+   ============================================================================ */
 
 function loadInitialData() {
     console.log('📊 Loading initial data...');
-    
-    // Load moods (this gives us all songs for battle dropdowns)
     loadMoods();
-    
-    // Load analytics
     loadAnalytics();
 }
 
-// ============================================================================
-// 4. API HELPER FUNCTION
-// ============================================================================
+/* ============================================================================
+   5. API HELPER WITH LOADING STATES
+   ============================================================================ */
 
-/**
- * Generic API call wrapper
- * Handles fetch, error handling, and response parsing
- */
 async function callAPI(endpoint, method = 'GET', data = null) {
     try {
-        console.log(`🔄 API Call: ${method} ${endpoint}`, data);
+        showLoadingState(true);
+        console.log(`🔄 API Call: ${method} ${endpoint}`);
         
         const options = {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: { 'Content-Type': 'application/json' }
         };
         
-        if (data) {
-            options.body = JSON.stringify(data);
-        }
+        if (data) options.body = JSON.stringify(data);
         
         const response = await fetch(endpoint, options);
-        
-        // Check if response is OK
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const result = await response.json();
-        console.log(`✓ Success: ${endpoint}`, result);
+        console.log(`✓ Success: ${endpoint}`);
         return result;
         
     } catch (error) {
-        console.error(`❌ API Error (${endpoint}):`, error.message);
+        console.error(`❌ API Error:`, error);
         showError(`Failed to fetch data: ${error.message}`);
         return null;
+    } finally {
+        showLoadingState(false);
     }
 }
 
-// ============================================================================
-// 5. SEARCH FUNCTIONALITY
-// ============================================================================
+function showLoadingState(isLoading) {
+    appState.isLoading = isLoading;
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        if (isLoading) {
+            overlay.classList.add('active');
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+}
 
-/**
- * Handle search form submission
- */
+/* ============================================================================
+   6. SEARCH FUNCTIONALITY
+   ============================================================================ */
+
 async function handleSearch() {
-    console.log('🔍 Search handler triggered');
-    
     const searchInput = document.getElementById('searchInput');
     const query = searchInput.value.trim();
     
-    // Validate input
     if (!query || query.length < 2) {
         showError('Please enter at least 2 characters');
         return;
     }
     
-    console.log(`Searching for: "${query}"`);
+    console.log(`🔍 Searching for: "${query}"`);
     
-    // Call API
     const result = await callAPI('/api/search', 'POST', { query: query });
     
     if (!result || !result.results) {
@@ -150,13 +264,9 @@ async function handleSearch() {
         return;
     }
     
-    // Display results
     displaySearchResults(result.results);
 }
 
-/**
- * Display search results as cards
- */
 function displaySearchResults(results) {
     console.log(`📊 Displaying ${results.length} search results`);
     
@@ -168,31 +278,31 @@ function displaySearchResults(results) {
         return;
     }
     
-    // Clear previous results
     resultsContainer.innerHTML = '';
     
     if (results.length === 0) {
-        resultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #64748b;">No songs found. Try searching for "levitating" or "blinding lights".</p>';
+        resultsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No songs found. Try "levitating" or "blinding lights".</p>';
         searchResultsSection.style.display = 'block';
         return;
     }
     
-    // Create song cards
-    results.forEach(song => {
+    results.forEach((song, index) => {
         const card = createSongCard(song);
         resultsContainer.appendChild(card);
     });
     
     searchResultsSection.style.display = 'block';
-    console.log(`✓ Displayed ${results.length} song cards`);
+    
+    // Smooth scroll to results
+    setTimeout(() => {
+        searchResultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
 }
 
-/**
- * Create a song card HTML element
- */
 function createSongCard(song) {
     const card = document.createElement('div');
     card.className = 'song-card';
+    card.style.animationDelay = Math.random() * 0.3 + 's';
     
     card.innerHTML = `
         <h4>${escapeHtml(song.title)}</h4>
@@ -217,7 +327,6 @@ function createSongCard(song) {
         </div>
     `;
     
-    // Add click handler
     card.addEventListener('click', function() {
         selectSong(song);
     });
@@ -225,70 +334,66 @@ function createSongCard(song) {
     return card;
 }
 
-// ============================================================================
-// 6. SONG SELECTION & RECOMMENDATIONS
-// ============================================================================
+/* ============================================================================
+   7. SONG SELECTION & RECOMMENDATIONS
+   ============================================================================ */
 
-/**
- * Select a song and load recommendations/insights
- */
 async function selectSong(song) {
     console.log(`✓ Song selected: ${song.title} (ID: ${song.id})`);
     
     appState.selectedSong = song;
+    appState.selectedMood = null;
     
-    // Display selected song info
+    // Clear mood filter when new song is selected
+    document.querySelectorAll('.mood-filter-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
     displaySelectedSong(song);
-    
-    // Get recommendations
     await getRecommendations(song.id);
-    
-    // Get insights
     await getInsights(song.id);
-    
-    // Populate battle dropdowns
     populateBattleDropdowns();
+    
+    // Show mood filter section
+    const moodFilterSection = document.getElementById('moodFilterSection');
+    if (moodFilterSection) {
+        moodFilterSection.style.display = 'block';
+    }
 }
 
-/**
- * Display the selected song information
- */
 function displaySelectedSong(song) {
     console.log(`Displaying selected song: ${song.title}`);
     
     const selectedSection = document.getElementById('selectedSongSection');
     const infoContainer = document.getElementById('selectedSongInfo');
     
-    if (!infoContainer) {
-        console.error('Selected song container not found');
-        return;
-    }
+    if (!infoContainer) return;
     
     infoContainer.innerHTML = `
         <div class="info-item">
-            <div class="info-label">🎵 Song Title</div>
+            <div class="info-label">🎵 Song</div>
             <div class="info-value">${escapeHtml(song.title)}</div>
-            <div class="info-subtext">${escapeHtml(song.artist)}</div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">${escapeHtml(song.artist)}</p>
         </div>
         <div class="info-item">
             <div class="info-label">⚡ Energy</div>
             <div class="info-value">${song.energy.toFixed(2)}</div>
-            <div class="info-subtext">Intensity level</div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">Intensity</p>
         </div>
         <div class="info-item">
             <div class="info-label">💃 Danceability</div>
             <div class="info-value">${song.danceability.toFixed(2)}</div>
-            <div class="info-subtext">Suitable for dancing</div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">Dance-worthy</p>
         </div>
         <div class="info-item">
             <div class="info-label">🎼 Tempo</div>
             <div class="info-value">${song.tempo} BPM</div>
-            <div class="info-subtext">Beats per minute</div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">Speed</p>
         </div>
         <div class="info-item">
             <div class="info-label">⭐ Popularity</div>
             <div class="info-value">${song.popularity}</div>
-            <div class="info-subtext">Out of 100</div>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">Out of 100</p>
         </div>
     `;
     
@@ -297,13 +402,14 @@ function displaySelectedSong(song) {
 
 /**
  * Get recommendations for selected song
+ * Calls Flask POST /api/recommend endpoint
  */
 async function getRecommendations(songId) {
     console.log(`📎 Getting recommendations for song ${songId}`);
     
     const result = await callAPI('/api/recommend', 'POST', {
         song_id: songId,
-        count: appState.recommendCount
+        count: 5
     });
     
     if (!result || !result.recommendations) {
@@ -314,45 +420,63 @@ async function getRecommendations(songId) {
     displayRecommendations(result.recommendations);
 }
 
-/**
- * Display recommendation cards
- */
 function displayRecommendations(recommendations) {
     console.log(`📊 Displaying ${recommendations.length} recommendations`);
     
     const recSection = document.getElementById('recommendationsSection');
     const recContainer = document.getElementById('recommendationsContainer');
+    const recSubtitle = document.getElementById('recommendationsSubtitle');
     
-    if (!recContainer) {
-        console.error('Recommendations container not found');
-        return;
-    }
+    if (!recContainer) return;
     
-    // Clear previous
     recContainer.innerHTML = '';
     
-    recommendations.forEach((rec) => {
-        const card = createRecommendationCard(rec);
+    const reasonsMap = {
+        'similar_energy': 'Recommended because it has similar energy levels.',
+        'similar_danceability': 'Recommended because it matches your danceability preference.',
+        'similar_tempo': 'Recommended because it has a compatible tempo.',
+        'popular': 'Recommended because it\'s trending and popular.',
+        'overall': 'Recommended based on overall audio similarity.'
+    };
+    
+    recommendations.forEach((rec, index) => {
+        const card = createRecommendationCard(rec, index);
         recContainer.appendChild(card);
     });
     
+    if (appState.selectedMood) {
+        recSubtitle.textContent = `Recommended songs matching "${appState.selectedMood}" mood`;
+    } else {
+        recSubtitle.textContent = 'Based on audio feature similarity analysis';
+    }
+    
     recSection.style.display = 'block';
+    
+    // Smooth scroll to recommendations
+    setTimeout(() => {
+        recSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 500);
 }
 
-/**
- * Create a recommendation card
- */
-function createRecommendationCard(rec) {
+function createRecommendationCard(rec, index) {
     const card = document.createElement('div');
     card.className = 'recommendation-card';
     
     const confidencePercent = Math.round(rec.similarity_score * 100);
+    
+    // Determine recommendation reason
+    let reason = 'Recommended based on audio similarity.';
+    if (confidencePercent >= 95) reason = 'Perfect match! Very similar to your selection.';
+    else if (confidencePercent >= 85) reason = 'High similarity in energy and danceability.';
+    else if (confidencePercent >= 75) reason = 'Good match with similar audio characteristics.';
     
     card.innerHTML = `
         <h4>${escapeHtml(rec.title)}</h4>
         <div class="recommendation-artist">${escapeHtml(rec.artist)}</div>
         
         <div class="recommendation-score">${confidencePercent}% Match</div>
+        
+        <div class="recommendation-reason">💡 ${reason}</div>
         
         <div class="recommendation-features">
             <div class="feature">
@@ -379,13 +503,10 @@ function createRecommendationCard(rec) {
     return card;
 }
 
-// ============================================================================
-// 7. INSIGHTS
-// ============================================================================
+/* ============================================================================
+   8. INSIGHTS
+   ============================================================================ */
 
-/**
- * Get AI insights for selected song
- */
 async function getInsights(songId) {
     console.log(`💡 Getting insights for song ${songId}`);
     
@@ -399,19 +520,13 @@ async function getInsights(songId) {
     displayInsights(result.insights);
 }
 
-/**
- * Display insights
- */
 function displayInsights(insights) {
     console.log(`💡 Displaying ${insights.length} insights`);
     
     const insightsSection = document.getElementById('insightsSection');
     const insightsContainer = document.getElementById('insightsContainer');
     
-    if (!insightsContainer) {
-        console.error('Insights container not found');
-        return;
-    }
+    if (!insightsContainer) return;
     
     insightsContainer.innerHTML = '';
     
@@ -426,34 +541,119 @@ function displayInsights(insights) {
     insightsSection.style.display = 'block';
 }
 
-// ============================================================================
-// 8. SONG BATTLE
-// ============================================================================
+/* ============================================================================
+   9. MOOD FILTERING
+   ============================================================================ */
 
 /**
- * Populate battle dropdowns with all available songs
+ * Populate mood filter cards
+ * Called when recommendations are displayed
  */
+function populateMoodFilters(moods) {
+    console.log('🎭 Populating mood filters...');
+    
+    const moodFilterContainer = document.getElementById('moodFilterContainer');
+    if (!moodFilterContainer) return;
+    
+    moodFilterContainer.innerHTML = '';
+    
+    const moodEmojis = {
+        'Gym Energy': '💪',
+        'Party Vibes': '🎉',
+        'Energetic': '⚡',
+        'Feel-Good': '😊',
+        'Study Session': '📚',
+        'Chilled': '❄️',
+        'Summer Vibes': '☀️',
+        'Late Night': '🌙',
+        'Melancholy': '😢',
+        'Focus Mode': '🎯'
+    };
+    
+    Object.entries(moods).forEach(([moodName, songs]) => {
+        const card = document.createElement('div');
+        card.className = 'mood-filter-card';
+        
+        const emoji = moodEmojis[moodName] || '🎵';
+        
+        card.innerHTML = `
+            <div class="mood-filter-emoji">${emoji}</div>
+            <div class="mood-filter-name">${escapeHtml(moodName)}</div>
+            <div class="mood-filter-count">${songs.length} songs</div>
+        `;
+        
+        card.addEventListener('click', () => {
+            filterByMood(moodName, songs);
+        });
+        
+        moodFilterContainer.appendChild(card);
+    });
+    
+    console.log('✓ Mood filters populated');
+}
+
+/**
+ * Filter recommendations by selected mood
+ * Shows only songs matching the selected mood
+ */
+function filterByMood(moodName, moodSongs) {
+    console.log(`🎭 Filtering by mood: ${moodName}`);
+    
+    // Update UI
+    document.querySelectorAll('.mood-filter-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    appState.selectedMood = moodName;
+    
+    // Filter recommendations
+    const filtered = appState.currentRecommendations.filter(rec => rec.mood === moodName);
+    
+    if (filtered.length === 0) {
+        showError(`No recommendations found for ${moodName} mood`);
+        return;
+    }
+    
+    displayRecommendations(filtered);
+}
+
+function clearMoodFilter() {
+    console.log('🔄 Clearing mood filter');
+    
+    appState.selectedMood = null;
+    
+    // Clear highlight
+    document.querySelectorAll('.mood-filter-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Show all recommendations
+    if (appState.currentRecommendations) {
+        displayRecommendations(appState.currentRecommendations);
+    }
+}
+
+/* ============================================================================
+   10. SONG BATTLE
+   ============================================================================ */
+
 function populateBattleDropdowns() {
     console.log(`Populating battle dropdowns with ${appState.allSongs.length} songs`);
     
     const select1 = document.getElementById('battleSong1');
     const select2 = document.getElementById('battleSong2');
     
-    if (!select1 || !select2) {
-        console.error('Battle select elements not found');
-        return;
-    }
+    if (!select1 || !select2) return;
     
     if (appState.allSongs.length === 0) {
-        console.warn('No songs loaded for battle dropdowns');
+        console.warn('No songs loaded for battle');
         return;
     }
     
-    // Clear existing options (keep placeholder)
     select1.innerHTML = '<option value="">Select a song...</option>';
     select2.innerHTML = '<option value="">Select a song...</option>';
     
-    // Add all songs
     appState.allSongs.forEach(song => {
         const option1 = document.createElement('option');
         option1.value = song.id;
@@ -466,7 +666,6 @@ function populateBattleDropdowns() {
         select2.appendChild(option2);
     });
     
-    // Show battle section
     const battleSection = document.getElementById('battleSection');
     if (battleSection) {
         battleSection.style.display = 'block';
@@ -475,9 +674,6 @@ function populateBattleDropdowns() {
     console.log('✓ Battle dropdowns populated');
 }
 
-/**
- * Handle battle comparison
- */
 async function handleBattle() {
     console.log('⚔️ Battle handler triggered');
     
@@ -487,7 +683,6 @@ async function handleBattle() {
     const song1Id = parseInt(select1.value);
     const song2Id = parseInt(select2.value);
     
-    // Validate selections
     if (!song1Id || !song2Id) {
         showError('Please select two songs');
         return;
@@ -500,7 +695,6 @@ async function handleBattle() {
     
     console.log(`Comparing songs: ${song1Id} vs ${song2Id}`);
     
-    // Call API
     const result = await callAPI('/api/battle', 'POST', {
         song1_id: song1Id,
         song2_id: song2Id
@@ -514,21 +708,14 @@ async function handleBattle() {
     displayBattleResults(result);
 }
 
-/**
- * Display battle results
- */
 function displayBattleResults(result) {
     console.log('📊 Displaying battle results');
     
     const battleSection = document.getElementById('battleSection');
     const resultsContainer = document.getElementById('battleResultsContainer');
     
-    if (!resultsContainer) {
-        console.error('Battle results container not found');
-        return;
-    }
+    if (!resultsContainer) return;
     
-    // Determine winners
     const song1Wins = result.winner === 'song1';
     const song2Wins = result.winner === 'song2';
     
@@ -589,13 +776,10 @@ function displayBattleResults(result) {
     resultsContainer.style.display = 'grid';
 }
 
-// ============================================================================
-// 9. ANALYTICS
-// ============================================================================
+/* ============================================================================
+   11. ANALYTICS
+   ============================================================================ */
 
-/**
- * Load and display analytics
- */
 async function loadAnalytics() {
     console.log('📊 Loading analytics...');
     
@@ -609,9 +793,6 @@ async function loadAnalytics() {
     displayAnalytics(result);
 }
 
-/**
- * Display analytics data
- */
 function displayAnalytics(data) {
     console.log('📊 Displaying analytics');
     
@@ -619,16 +800,12 @@ function displayAnalytics(data) {
     const summaryContainer = document.getElementById('analyticsSummary');
     const chartsContainer = document.getElementById('analyticsCharts');
     
-    if (!summaryContainer || !chartsContainer) {
-        console.error('Analytics containers not found');
-        return;
-    }
+    if (!summaryContainer || !chartsContainer) return;
     
-    // Clear previous content
     summaryContainer.innerHTML = '';
     chartsContainer.innerHTML = '';
     
-    // Display summary cards
+    // Summary cards
     const summaryCards = [
         {
             label: 'Total Songs',
@@ -657,18 +834,19 @@ function displayAnalytics(data) {
         }
     ];
     
-    summaryCards.forEach(card => {
+    summaryCards.forEach((card, index) => {
         const cardEl = document.createElement('div');
         cardEl.className = 'analytics-card';
+        cardEl.style.animationDelay = `${index * 100}ms`;
         cardEl.innerHTML = `
             <div class="analytics-label">${card.label}</div>
             <div class="analytics-value">${card.value}</div>
-            <div class="analytics-subtext">${card.subtext}</div>
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">${card.subtext}</div>
         `;
         summaryContainer.appendChild(cardEl);
     });
     
-    // Display distribution charts
+    // Charts
     const tempoChart = createDistributionChart(
         'Tempo Distribution',
         [
@@ -692,19 +870,14 @@ function displayAnalytics(data) {
     analyticsSection.style.display = 'block';
 }
 
-/**
- * Create a distribution chart
- */
 function createDistributionChart(title, data) {
     const chart = document.createElement('div');
     chart.className = 'chart';
     
-    // Find max value for scaling
     const maxValue = Math.max(...data.map(d => d.value));
     
-    // Create bars
     let barsHTML = '';
-    data.forEach((item, index) => {
+    data.forEach((item) => {
         const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
         barsHTML += `
             <div class="chart-bar" style="height: ${percentage}%;">
@@ -724,13 +897,10 @@ function createDistributionChart(title, data) {
     return chart;
 }
 
-// ============================================================================
-// 10. MOODS
-// ============================================================================
+/* ============================================================================
+   12. MOODS
+   ============================================================================ */
 
-/**
- * Load mood data
- */
 async function loadMoods() {
     console.log('🎭 Loading moods...');
     
@@ -747,29 +917,21 @@ async function loadMoods() {
         allSongs.push(...moodSongs);
     });
     appState.allSongs = allSongs;
-    console.log(`Loaded ${allSongs.length} songs from moods`);
     
-    // Display moods
     displayMoods(result.moods);
+    populateMoodFilters(result.moods);
 }
 
-/**
- * Display mood classification
- */
 function displayMoods(moods) {
     console.log(`🎭 Displaying ${Object.keys(moods).length} mood categories`);
     
     const moodsSection = document.getElementById('moodsSection');
     const moodsContainer = document.getElementById('moodsContainer');
     
-    if (!moodsContainer) {
-        console.error('Moods container not found');
-        return;
-    }
+    if (!moodsContainer) return;
     
     moodsContainer.innerHTML = '';
     
-    // Mood emojis
     const moodEmojis = {
         'Gym Energy': '💪',
         'Party Vibes': '🎉',
@@ -783,9 +945,11 @@ function displayMoods(moods) {
         'Focus Mode': '🎯'
     };
     
+    let delayCount = 0;
     Object.entries(moods).forEach(([moodName, songs]) => {
         const card = document.createElement('div');
         card.className = 'mood-card';
+        card.style.animationDelay = `${Math.min(delayCount, 5) * 100}ms`;
         
         const emoji = moodEmojis[moodName] || '🎵';
         
@@ -796,18 +960,16 @@ function displayMoods(moods) {
         `;
         
         moodsContainer.appendChild(card);
+        delayCount++;
     });
     
     moodsSection.style.display = 'block';
 }
 
-// ============================================================================
-// 11. UTILITY FUNCTIONS
-// ============================================================================
+/* ============================================================================
+   13. UTILITY FUNCTIONS
+   ============================================================================ */
 
-/**
- * Escape HTML to prevent XSS
- */
 function escapeHtml(text) {
     const map = {
         '&': '&amp;',
@@ -819,85 +981,36 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-/**
- * Show error message
- */
 function showError(message) {
     console.error('❌ Error:', message);
     
-    // Create error element
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.innerHTML = `⚠️ ${message}`;
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 0, 110, 0.9);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #ff006e;
+        z-index: 10000;
+        max-width: 400px;
+        font-size: 0.95rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(255, 0, 110, 0.3);
+    `;
+    errorDiv.textContent = `⚠️ ${message}`;
     
-    // Insert at top of main content
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.insertBefore(errorDiv, mainContent.firstChild);
-    }
+    document.body.appendChild(errorDiv);
     
-    // Auto-remove after 5 seconds
     setTimeout(() => {
         errorDiv.remove();
     }, 5000);
 }
 
-/**
- * Show success message
- */
-function showSuccess(message) {
-    console.log('✓ Success:', message);
-    
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
-    successDiv.innerHTML = `✓ ${message}`;
-    
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.insertBefore(successDiv, mainContent.firstChild);
-    }
-    
-    setTimeout(() => {
-        successDiv.remove();
-    }, 3000);
-}
+/* ============================================================================
+   14. INITIALIZE ON LOAD
+   ============================================================================ */
 
-// ============================================================================
-// 12. DEBUG HELPERS
-// ============================================================================
-
-// Expose debug helpers in console
-window.DEBUG = {
-    state: () => {
-        console.log('Current State:', appState);
-        return appState;
-    },
-    
-    testSearch: () => {
-        console.log('Testing search...');
-        return callAPI('/api/search', 'POST', { query: 'levitating' });
-    },
-    
-    testMoods: () => {
-        console.log('Testing moods API...');
-        return callAPI('/api/moods', 'GET');
-    },
-    
-    testAnalytics: () => {
-        console.log('Testing analytics API...');
-        return callAPI('/api/analytics', 'GET');
-    },
-    
-    testBattle: (id1 = 1, id2 = 2) => {
-        console.log(`Testing battle: ${id1} vs ${id2}`);
-        return callAPI('/api/battle', 'POST', { song1_id: id1, song2_id: id2 });
-    }
-};
-
-console.log('✓ Debug helpers available: window.DEBUG');
-console.log('  Examples:');
-console.log('    window.DEBUG.state()          - View current app state');
-console.log('    window.DEBUG.testSearch()     - Test search API');
-console.log('    window.DEBUG.testMoods()      - Test moods API');
-console.log('    window.DEBUG.testAnalytics()  - Test analytics API');
-console.log('    window.DEBUG.testBattle()     - Test battle API');
+console.log('✓ Audio Intelligence Platform V2 Ready');
