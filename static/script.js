@@ -236,13 +236,13 @@ async function selectSong(song) {
             </div>`;
     }
     document.getElementById('selectedSongSection')?.classList.remove('hidden');
-    // Spotify Player
+   // Spotify Player
 const spotifyPlayer = document.getElementById("spotify-player");
 
-   if (spotifyPlayer && song.spotify_track_id) {
-      spotifyPlayer.classList.remove("hidden");
-      
-      spotifyPlayer.innerHTML = `
+if (spotifyPlayer && song.spotify_track_id) {
+    spotifyPlayer.classList.remove("hidden");
+
+    spotifyPlayer.innerHTML = `
         <iframe
             style="border-radius:12px"
             src="https://open.spotify.com/embed/track/${song.spotify_track_id}"
@@ -254,19 +254,19 @@ const spotifyPlayer = document.getElementById("spotify-player");
             loading="lazy">
         </iframe>
     `;
-   } else if (spotifyPlayer) {
+} else if (spotifyPlayer) {
     spotifyPlayer.classList.add("hidden");
-   }
-   
-   await Promise.all([
+}
+
+    await Promise.all([
         getRecommendations(song.id),
         getInsights(song.id),
-   ]);
-   
-   setTimeout(() => {
-      document.getElementById('selectedSongSection')
-         ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-   }, 150);
+    ]);
+
+    setTimeout(() => {
+        document.getElementById('selectedSongSection')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
 }
 
 async function getRecommendations(songId) {
