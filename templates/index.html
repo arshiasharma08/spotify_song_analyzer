@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_upgrade_addon.css') }}">
 </head>
 <body>
 
@@ -57,7 +58,7 @@
 
     <main>
 
-        <!-- HERO -->
+        <!-- HERO / SEARCH SECTION -->
         <section class="hero" id="search">
             <div class="container">
                 <div class="hero-tag">
@@ -71,7 +72,7 @@
                 </h1>
 
                 <p class="hero-sub">
-                    Search across 250 curated tracks. Get recommendations powered by weighted
+                    Search across 250+ curated tracks. Get recommendations powered by weighted
                     audio-feature similarity. Classify mood, compare songs, and explore the
                     sonic shape of your library.
                 </p>
@@ -113,30 +114,38 @@
             </div>
         </section>
 
-        <!-- SEARCH RESULTS -->
+        <!-- SEARCH RESULTS SECTION -->
         <section id="results" class="results hidden">
             <div class="container">
-                <h2 class="results-title">Results</h2>
+                <h2 class="results-title">Search Results</h2>
                 <div id="resultsList" class="results-grid"></div>
             </div>
         </section>
 
-        <!-- SELECTED SONG + RECOMMENDATIONS -->
+        <!-- SELECTED SONG DETAIL SECTION -->
         <section id="song-detail" class="song-detail hidden">
             <div class="container">
                 <div id="selectedSongDetail" class="song-detail-content"></div>
-                <div id="recommendationsSection" class="recommendations-section hidden">
-                    <h3>Similar tracks</h3>
-                    <div id="recommendationsList" class="recommendations-grid"></div>
-                </div>
-                <div id="insightsSection" class="insights-section hidden">
-                    <h3>Insights</h3>
-                    <div id="insightsList" class="insights-list"></div>
-                </div>
             </div>
         </section>
 
-        <!-- MOODS -->
+        <!-- RECOMMENDATIONS SECTION -->
+        <section id="recommendationsSection" class="recommendations-section hidden">
+            <div class="container">
+                <h3 class="section-title">Similar Tracks</h3>
+                <div id="recommendationsList" class="recommendations-grid"></div>
+            </div>
+        </section>
+
+        <!-- INSIGHTS SECTION -->
+        <section id="insightsSection" class="insights-section hidden">
+            <div class="container">
+                <h3 class="section-title">Insights</h3>
+                <div id="insightsList" class="insights-list"></div>
+            </div>
+        </section>
+
+        <!-- MOODS SECTION -->
         <section class="moods-section" id="moods">
             <div class="container">
                 <div class="section-header">
@@ -158,7 +167,7 @@
             </div>
         </section>
 
-        <!-- ANALYTICS DASHBOARD -->
+        <!-- ANALYTICS DASHBOARD SECTION -->
         <section class="dashboard-section" id="dashboard">
             <div class="container">
                 <div class="section-header">
@@ -208,7 +217,7 @@
             </div>
         </section>
 
-        <!-- BATTLE -->
+        <!-- BATTLE SECTION -->
         <section class="battle-section" id="battle">
             <div class="container">
                 <div class="section-header">
@@ -243,11 +252,15 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>Sonar v2.0 · Audio intelligence platform</p>
+            <p>Sonar v2.0 · AI Music Intelligence Platform</p>
         </div>
     </footer>
+
+    <!-- LOADING INDICATOR -->
+    <div id="loadingIndicator" class="loading-indicator hidden">
+        <div class="spinner"></div>
+    </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-
