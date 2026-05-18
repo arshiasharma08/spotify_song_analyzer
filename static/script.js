@@ -1,640 +1,524 @@
-/* ============================================================================
-   SONAR · AI MUSIC INTELLIGENCE — FRONTEND
-   Talks to existing Flask backend (/api/search, /api/recommend, /api/battle,
-   /api/moods, /api/analytics, /api/insights). No backend changes.
-   ============================================================================ */
+/**
+ * Sonar.ai - Enhanced Script
+ * Features: Search, Recommendations, Mood Filtering, Battle Mode, Spotify Playback
+ */
+
+// ============================================================================
+// GLOBAL STATE
+// ============================================================================
 
 const state = {
     songs: [],
-    allMoods: {},
     selectedSong: null,
-    selectedMood: null,
-    analytics: null,
+    recentlyPlayed: [],
+    favorites: new Set(JSON.parse(localStorage.getItem('sonar_favorites') || '[]')),
+    currentPage: 1
 };
 
-const MOOD_EMOJI = {
-    'Gym Energy': '💪', 'Party Vibes': '🎉', 'Energetic': '⚡',
-    'Feel-Good': '😊', 'Study Session': '📚', 'Chilled': '❄️',
-    'Summer Vibes': '☀️', 'Late Night': '🌙', 'Melancholy': '🌧️',
-    'Focus Mode': '🎯',
-};
+const SONGS_PER_PAGE = 50;
 
-/* ============================================================================
-   BOOTSTRAP
-   ============================================================================ */
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    initParticles();
-    bindListeners();
-    loadInitial();
+    console.log('🎵 Sonar.ai initializing...');
+    setupEventListeners();
+    loadRecentlyPlayed();
+    console.log('✓ Sonar.ai ready');
 });
 
-/* ============================================================================
-   LIGHTWEIGHT PARTICLE CANVAS (no three.js needed)
-   ============================================================================ */
-function initParticles() {
-    const canvas = document.getElementById('particles-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
 
-    let w, h, particles = [];
-    const COUNT = window.innerWidth < 768 ? 30 : 60;
-
-    function resize() {
-        w = canvas.width = window.innerWidth * window.devicePixelRatio;
-        h = canvas.height = window.innerHeight * window.devicePixelRatio;
-        canvas.style.width = window.innerWidth + 'px';
-        canvas.style.height = window.innerHeight + 'px';
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    for (let i = 0; i < COUNT; i++) {
-        particles.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: (Math.random() - 0.5) * 0.3,
-            r: Math.random() * 1.6 + 0.4,
-            hue: Math.random() > 0.5 ? 190 : 270, // cyan-ish or purple
-        });
-    }
-
-    function tick() {
-        ctx.clearRect(0, 0, w, h);
-        particles.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
-            if (p.x < 0) p.x = w; else if (p.x > w) p.x = 0;
-            if (p.y < 0) p.y = h; else if (p.y > h) p.y = 0;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r * window.devicePixelRatio, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, 0.55)`;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = `hsla(${p.hue}, 100%, 65%, 0.6)`;
-            ctx.fill();
-        });
-        requestAnimationFrame(tick);
-    }
-    tick();
-}
-
-/* ============================================================================
-   EVENT LISTENERS
-   ============================================================================ */
-function bindListeners() {
-    const form = document.getElementById('searchForm');
-    if (form) form.addEventListener('submit', e => { e.preventDefault(); handleSearch(); });
-
+function setupEventListeners() {
+    // Search
     const searchBtn = document.getElementById('searchBtn');
-    if (searchBtn) searchBtn.addEventListener('click', e => { e.preventDefault(); handleSearch(); });
-
-    const input = document.getElementById('searchInput');
-    if (input) input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
+    const searchInput = document.getElementById('searchInput');
+    
+    if (searchBtn) searchBtn.addEventListener('click', handleSearch);
+    if (searchInput) searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearch();
     });
-
+    
+    // Chips
     document.querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            const q = chip.dataset.query;
-            document.getElementById('searchInput').value = q;
-            handleSearch();
+            const query = chip.dataset.query;
+            const input = document.getElementById('searchInput');
+            if (input) {
+                input.value = query;
+                handleSearch();
+            }
         });
     });
-
+    
+    // Battle
     const battleBtn = document.getElementById('battleBtn');
     if (battleBtn) battleBtn.addEventListener('click', handleBattle);
-
-    const clearMood = document.getElementById('clearMoodFilterBtn');
-    if (clearMood) clearMood.addEventListener('click', clearMoodFilter);
+    
+    // Mood filtering
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('mood-card')) {
+            const mood = e.target.dataset.mood;
+            filterByMood(mood);
+        }
+    });
+    
+    // Clear mood filter
+    const clearMoodBtn = document.getElementById('clearMoodFilterBtn');
+    if (clearMoodBtn) {
+        clearMoodBtn.addEventListener('click', clearMoodFilter);
+    }
 }
 
-/* ============================================================================
-   INITIAL LOAD
-   ============================================================================ */
-async function loadInitial() {
-    await loadMoods();
-    await loadAnalytics();
-    populateBattleSelects();
-}
+// ============================================================================
+// SEARCH
+// ============================================================================
 
-/* ============================================================================
-   API
-   ============================================================================ */
-async function api(endpoint, method = 'GET', data = null) {
+async function handleSearch() {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    
+    const query = input.value.trim();
+    if (!query || query.length < 2) {
+        showMessage('Enter at least 2 characters', 'warning');
+        return;
+    }
+    
+    console.log(`🔍 Searching: ${query}`);
     showLoading(true);
+    
     try {
-        const opts = { method, headers: { 'Content-Type': 'application/json' } };
-        if (data) opts.body = JSON.stringify(data);
-        const res = await fetch(endpoint, opts);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('API error', endpoint, err);
-        return null;
+        const response = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+        
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+            displaySearchResults(data.results);
+        } else {
+            showMessage('No songs found', 'info');
+        }
+    } catch (error) {
+        console.error('❌ Search error:', error);
+        showMessage('Search failed', 'error');
     } finally {
         showLoading(false);
     }
 }
 
-function showLoading(show) {
-    const el = document.getElementById('loadingIndicator');
-    if (el) el.classList.toggle('hidden', !show);
-}
-
-/* ============================================================================
-   TOAST (inline message)
-   ============================================================================ */
-let toastTimer;
-function toast(msg) {
-    const el = document.getElementById('toast');
-    const m = document.getElementById('toastMsg');
-    if (!el || !m) return;
-    m.textContent = msg;
-    el.classList.remove('hidden');
-    requestAnimationFrame(() => el.classList.add('show'));
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        el.classList.remove('show');
-        setTimeout(() => el.classList.add('hidden'), 320);
-    }, 2600);
-}
-
-/* ============================================================================
-   SEARCH
-   ============================================================================ */
-async function handleSearch() {
-    const input = document.getElementById('searchInput');
-    const query = (input?.value || '').trim();
-    if (query.length < 2) { toast('Type at least 2 characters'); return; }
-
-    const result = await api('/api/search', 'POST', { query });
-    if (!result || !result.results) { toast('Search failed — please try again'); return; }
-
-    renderSearchResults(result.results);
-}
-
-function renderSearchResults(results) {
-    const list = document.getElementById('resultsList');
-    const section = document.getElementById('searchResults');
-    const count = document.getElementById('resultsCount');
-    if (!list || !section) return;
-
-    list.innerHTML = '';
-    count.textContent = `${results.length} track${results.length === 1 ? '' : 's'}`;
-
-    if (results.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state" style="grid-column: 1/-1;">
-                <div class="empty-icon">🔍</div>
-                <p>No tracks matched that search. Try another title or artist.</p>
-            </div>`;
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-    }
-
-    results.forEach((song, i) => list.appendChild(buildResultCard(song, i)));
-    section.classList.remove('hidden');
-    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-}
-
-function buildResultCard(song, i = 0) {
-    const card = document.createElement('div');
-    card.className = 'result-card';
-    card.style.animationDelay = `${i * 50}ms`;
-    card.innerHTML = `
-        <h4>${escapeHtml(song.title)}</h4>
-        <p>${escapeHtml(song.artist)}</p>
-        <div class="metrics-row">
-            <div class="metric"><div class="metric-label">Energy</div><div class="metric-value">${song.energy.toFixed(2)}</div></div>
-            <div class="metric"><div class="metric-label">Dance</div><div class="metric-value">${song.danceability.toFixed(2)}</div></div>
-            <div class="metric"><div class="metric-label">Tempo</div><div class="metric-value">${song.tempo}</div></div>
-            <div class="metric"><div class="metric-label">Pop</div><div class="metric-value">${song.popularity}</div></div>
-        </div>`;
-    card.addEventListener('click', () => selectSong(song));
-    return card;
-}
-
-/* ============================================================================
-   SELECT SONG → RECS + INSIGHTS
-   ============================================================================ */
-async function selectSong(song) {
-    state.selectedSong = song;
-    state.selectedMood = null;
-    document.querySelectorAll('.mood-card.active').forEach(el => el.classList.remove('active'));
-    document.getElementById('moodFilterResults')?.classList.add('hidden');
-
-    const card = document.getElementById('selectedSongCard');
-    if (card) {
-        card.innerHTML = `
-            <h3 class="song-title">${escapeHtml(song.title)}</h3>
-            <p class="song-artist">${escapeHtml(song.artist)}</p>
-            <div class="info-grid">
-                <div class="info-item"><div class="info-item-label">Energy</div><div class="info-item-value">${song.energy.toFixed(2)}</div></div>
-                <div class="info-item"><div class="info-item-label">Danceability</div><div class="info-item-value">${song.danceability.toFixed(2)}</div></div>
-                <div class="info-item"><div class="info-item-label">Tempo</div><div class="info-item-value">${song.tempo} <span style="font-size:0.7em;color:var(--text-muted)">BPM</span></div></div>
-                <div class="info-item"><div class="info-item-label">Popularity</div><div class="info-item-value">${song.popularity}</div></div>
-            </div>`;
-    }
-    document.getElementById('selectedSongSection')?.classList.remove('hidden');
-
-    await Promise.all([
-        getRecommendations(song.id),
-        getInsights(song.id),
-    ]);
-
-    setTimeout(() => {
-        document.getElementById('selectedSongSection')
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 150);
-}
-
-async function getRecommendations(songId) {
-    const result = await api('/api/recommend', 'POST', { song_id: songId, count: 6 });
-    if (!result || !result.recommendations) return;
-    renderRecommendations(result.recommendations);
-}
-
-function renderRecommendations(recs) {
-    const grid = document.getElementById('recommendationsGrid');
-    const section = document.getElementById('recommendationsSection');
-    if (!grid || !section) return;
-    grid.innerHTML = '';
-
-    recs.forEach((rec, i) => {
-        const confidence = Math.round((rec.similarity_score || 0) * 100);
-        const reason = reasonFor(confidence);
-        const card = document.createElement('div');
-        card.className = 'rec-card';
-        card.style.animationDelay = `${i * 60}ms`;
-        card.innerHTML = `
-            <div class="rec-head">
-                <div>
-                    <div class="rec-title">${escapeHtml(rec.title)}</div>
-                    <div class="rec-artist">${escapeHtml(rec.artist)}</div>
-                </div>
-                <div class="rec-score">${confidence}%</div>
-            </div>
-            <div class="rec-reason">${reason}</div>
-            <div class="rec-features">
-                <div class="rec-feature"><div class="feature-label">Energy</div><div class="feature-value">${rec.energy.toFixed(2)}</div></div>
-                <div class="rec-feature"><div class="feature-label">Dance</div><div class="feature-value">${rec.danceability.toFixed(2)}</div></div>
-                <div class="rec-feature"><div class="feature-label">Tempo</div><div class="feature-value">${rec.tempo}</div></div>
-                <div class="rec-feature"><div class="feature-label">Pop</div><div class="feature-value">${rec.popularity}</div></div>
-            </div>
-            ${rec.mood ? `<span class="rec-mood">${escapeHtml(rec.mood)}</span>` : ''}`;
-        grid.appendChild(card);
-    });
-
-    section.classList.remove('hidden');
-}
-
-function reasonFor(c) {
-    if (c >= 95) return 'Near-perfect match — almost identical sonic signature.';
-    if (c >= 85) return 'Tight match on energy and danceability.';
-    if (c >= 75) return 'Strong overlap across multiple audio features.';
-    if (c >= 65) return 'Similar overall vibe and mood.';
-    return 'Recommended on broad audio similarity.';
-}
-
-async function getInsights(songId) {
-    const result = await api('/api/insights', 'POST', { song_id: songId });
-    if (!result || !result.insights) return;
-    const list = document.getElementById('insightsList');
-    const section = document.getElementById('insightsSection');
-    if (!list || !section) return;
-    list.innerHTML = '';
-    result.insights.forEach((text, i) => {
-        const item = document.createElement('div');
-        item.className = 'insight-item';
-        item.style.animationDelay = `${i * 80}ms`;
-        item.textContent = text;
-        list.appendChild(item);
-    });
-    section.classList.remove('hidden');
-}
-
-/* ============================================================================
-   MOODS
-   ============================================================================ */
-async function loadMoods() {
-    const result = await api('/api/moods', 'GET');
-    if (!result || !result.moods) return;
-
-    state.allMoods = result.moods;
-    state.songs = [];
-    Object.values(result.moods).forEach(arr => state.songs.push(...arr));
-
-    const grid = document.getElementById('moodGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    Object.entries(result.moods).forEach(([mood, songs], i) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'mood-card';
-        card.style.animationDelay = `${i * 40}ms`;
-        card.innerHTML = `
-            <div class="mood-emoji">${MOOD_EMOJI[mood] || '🎵'}</div>
-            <div class="mood-name">${escapeHtml(mood)}</div>
-            <div class="mood-count">${songs.length} track${songs.length === 1 ? '' : 's'}</div>`;
-        card.addEventListener('click', () => filterByMood(mood, card));
-        grid.appendChild(card);
-    });
-}
-
-function filterByMood(mood, cardEl) {
-    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
-    cardEl.classList.add('active');
-    state.selectedMood = mood;
-
-    const songs = state.allMoods[mood] || [];
-    const wrap = document.getElementById('moodFilterResults');
-    const title = document.getElementById('moodFilterTitle');
-    const meta = document.getElementById('moodFilterMeta');
-    const grid = document.getElementById('moodFilterGrid');
-    const empty = document.getElementById('moodEmptyState');
-    if (!wrap || !grid) return;
-
-    title.textContent = `${MOOD_EMOJI[mood] || '🎵'} ${mood}`;
-    meta.textContent = `${songs.length} track${songs.length === 1 ? '' : 's'} in this category`;
-    grid.innerHTML = '';
-
-    if (songs.length === 0) {
-        empty.classList.remove('hidden');
-        grid.classList.add('hidden');
-    } else {
-        empty.classList.add('hidden');
-        grid.classList.remove('hidden');
-        songs.forEach((s, i) => {
-            // mood payload may lack tempo/popularity — fall back to full songs list
-            const full = state.songs.find(x => x.id === s.id) || s;
-            grid.appendChild(buildResultCard({
-                id: full.id,
-                title: full.title,
-                artist: full.artist,
-                energy: full.energy ?? 0,
-                danceability: full.danceability ?? 0,
-                tempo: full.tempo ?? 0,
-                popularity: full.popularity ?? 0,
-            }, i));
-        });
-    }
-
-    wrap.classList.remove('hidden');
-    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-}
-
-function clearMoodFilter() {
-    state.selectedMood = null;
-    document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
-    document.getElementById('moodFilterResults')?.classList.add('hidden');
-}
-
-/* ============================================================================
-   ANALYTICS
-   ============================================================================ */
-async function loadAnalytics() {
-    const result = await api('/api/analytics', 'GET');
-    if (!result || !result.summary) return;
-    state.analytics = result;
-
-    const s = result.summary;
-    animateNumber('totalSongs', s.total_songs, 0);
-    animateNumber('avgEnergy', s.avg_energy, 2);
-    animateNumber('avgDance', s.avg_danceability, 2);
-    animateNumber('avgTempo', s.avg_tempo, 0);
-    animateNumber('avgPopularity', s.avg_popularity, 0);
-
-    // mini bars
-    fillBar(document.querySelector('#avgEnergy + .bar-mini .bar-mini-fill'), s.avg_energy * 100);
-    fillBar(document.querySelector('#avgDance + .bar-mini .bar-mini-fill'), s.avg_danceability * 100);
-    fillBar(document.querySelector('#avgPopularity + .bar-mini .bar-mini-fill'), s.avg_popularity);
-
-    // dominant tempo
-    const td = result.distributions?.tempo || {};
-    const tempoLabels = { slow: 'Slow', moderate: 'Moderate', fast: 'Fast' };
-    const domTempo = Object.entries(td).sort((a, b) => b[1] - a[1])[0];
-    if (domTempo) setText('dominantTempo', tempoLabels[domTempo[0]] || domTempo[0]);
-
-    // top mood (computed from state.allMoods if available)
-    const topMood = Object.entries(state.allMoods).sort((a, b) => b[1].length - a[1].length)[0];
-    if (topMood) setText('commonMood', topMood[0]);
-
-    // avg match — approximate (we don't have per-pair data); show a sensible derived value
-    setText('avgMatch', Math.round(s.avg_energy * 50 + s.avg_danceability * 50) + '%');
-
-    // charts
-    renderBarChart('tempoChart', td, { slow: 'Slow (<90)', moderate: 'Moderate', fast: 'Fast (≥130)' });
-    renderBarChart('energyChart', result.distributions?.energy || {}, { low: 'Low (<.4)', medium: 'Medium', high: 'High (≥.7)' });
-}
-
-function animateNumber(id, target, decimals) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const start = 0;
-    const duration = 900;
-    const t0 = performance.now();
-    function step(now) {
-        const p = Math.min(1, (now - t0) / duration);
-        const eased = 1 - Math.pow(1 - p, 3);
-        const v = start + (target - start) * eased;
-        el.textContent = decimals === 0 ? Math.round(v).toLocaleString() : v.toFixed(decimals);
-        if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-}
-
-function fillBar(el, pct) {
-    if (!el) return;
-    requestAnimationFrame(() => { el.style.width = Math.max(0, Math.min(100, pct)) + '%'; });
-}
-
-function renderBarChart(id, data, labels) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = '';
-    const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
-    Object.entries(data).forEach(([key, value], i) => {
-        const pct = (value / total) * 100;
-        const row = document.createElement('div');
-        row.className = 'bar-row';
-        row.innerHTML = `
-            <div class="bar-row-label">${labels[key] || key}</div>
-            <div class="bar-track"><div class="bar-fill" data-fill="${pct}"></div></div>
-            <div class="bar-row-value">${value}</div>`;
-        el.appendChild(row);
-        setTimeout(() => {
-            row.querySelector('.bar-fill').style.width = pct + '%';
-        }, 100 + i * 80);
-    });
-}
-
-/* ============================================================================
-   BATTLE
-   ============================================================================ */
-function populateBattleSelects() {
-    const a = document.getElementById('song1');
-    const b = document.getElementById('song2');
-    if (!a || !b) return;
-    // deduplicate by id
-    const seen = new Set();
-    const uniq = state.songs.filter(s => seen.has(s.id) ? false : seen.add(s.id));
-    uniq.sort((x, y) => x.title.localeCompare(y.title));
-
-    const opts = uniq.map(s => `<option value="${s.id}">${escapeHtml(s.title)} — ${escapeHtml(s.artist)}</option>`).join('');
-    a.innerHTML = `<option value="">Select song…</option>${opts}`;
-    b.innerHTML = `<option value="">Select song…</option>${opts}`;
-}
-
-async function handleBattle() {
-    const id1 = parseInt(document.getElementById('song1').value, 10);
-    const id2 = parseInt(document.getElementById('song2').value, 10);
-    if (!id1 || !id2) { toast('Pick two tracks to battle'); return; }
-    if (id1 === id2) { toast('Pick two different tracks'); return; }
-
-    const result = await api('/api/battle', 'POST', { song1_id: id1, song2_id: id2 });
-    if (!result) { toast('Battle failed — try again'); return; }
-    renderBattle(result);
-}
-
-function renderBattle(r) {
-    const wrap = document.getElementById('battleResults');
-    if (!wrap) return;
-    const s1 = r.song1 || {};
-    const s2 = r.song2 || {};
-    const winner = r.winner || {};
-    const winnerIs1 = winner.id === s1.id;
-
-    wrap.innerHTML = `
-        <div class="battle-winner">
-            <div class="battle-winner-label">Winner</div>
-            <div class="battle-winner-name">${escapeHtml(winner.title || '—')} ${winner.artist ? '· ' + escapeHtml(winner.artist) : ''}</div>
-        </div>
-        <div class="battle-comparison">
-            ${battleSide(s1, winnerIs1)}
-            ${battleSide(s2, !winnerIs1)}
-        </div>`;
-    wrap.classList.remove('hidden');
-    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-}
-
-function battleSide(s, isWinner) {
-    return `
-        <div class="battle-side ${isWinner ? 'winner' : ''}">
-            <div class="battle-side-title">${escapeHtml(s.title || '—')}<br><span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">${escapeHtml(s.artist || '')}</span></div>
-            <div class="battle-side-features">
-                <div class="battle-feature-row"><span>Energy</span><span>${(s.energy ?? 0).toFixed(2)}</span></div>
-                <div class="battle-feature-row"><span>Dance</span><span>${(s.danceability ?? 0).toFixed(2)}</span></div>
-                <div class="battle-feature-row"><span>Tempo</span><span>${s.tempo ?? 0} BPM</span></div>
-                <div class="battle-feature-row"><span>Popularity</span><span>${s.popularity ?? 0}</span></div>
-            </div>
-        </div>`;
-}
-
-/* ============================================================================
-   UTIL
-   ============================================================================ */
-function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
-
-function escapeHtml(str) {
-    return String(str ?? '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[ch]));
-}
-
-// ============================================================================
-// MOOD FILTERING - Display filtered songs when mood is clicked
-// ============================================================================
-
-function displayMoodSongs(mood, songs) {
-    console.log(`🎭 Displaying ${songs.length} songs for ${mood}`);
+function displaySearchResults(results) {
+    const resultsSection = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
     
-    const resultsSection = document.getElementById('moodFilterResults');
-    const resultsGrid = document.getElementById('moodFilterGrid');
-    const resultsTitle = document.getElementById('moodResultsTitle');
-    const clearBtn = document.getElementById('clearMoodFilterBtn');
+    if (!resultsSection || !resultsList) return;
     
-    if (!resultsSection || !resultsGrid) return;
+    resultsList.innerHTML = '';
     
-    resultsTitle.textContent = `${mood} (${songs.length} songs)`;
-    resultsGrid.innerHTML = '';
-    
-    songs.forEach((song, i) => {
-        const card = document.createElement('div');
-        card.className = 'mood-song-card';
-        card.style.animationDelay = `${i * 30}ms`;
-        
-        card.innerHTML = `
-            <h4>${escapeHtml(song.title)}</h4>
-            <p>${escapeHtml(song.artist)}</p>
-            <div class="mood-song-metrics">
-                <div class="mood-metric">
-                    <div class="mood-metric-label">Energy</div>
-                    <div class="mood-metric-value">${song.energy.toFixed(2)}</div>
-                </div>
-                <div class="mood-metric">
-                    <div class="mood-metric-label">Dance</div>
-                    <div class="mood-metric-value">${song.danceability.toFixed(2)}</div>
-                </div>
-                <div class="mood-metric">
-                    <div class="mood-metric-label">Tempo</div>
-                    <div class="mood-metric-value">${song.tempo}</div>
-                </div>
-                <div class="mood-metric">
-                    <div class="mood-metric-label">Pop</div>
-                    <div class="mood-metric-value">${song.popularity}</div>
-                </div>
-            </div>
-        `;
-        resultsGrid.appendChild(card);
+    results.forEach((song, idx) => {
+        const card = createSongCard(song);
+        card.style.animationDelay = `${idx * 30}ms`;
+        resultsList.appendChild(card);
     });
     
     resultsSection.classList.remove('hidden');
-    clearBtn.addEventListener('click', clearMoodFilter);
+    console.log(`✓ Displayed ${results.length} results`);
+}
+
+// ============================================================================
+// SONG CARD CREATION
+// ============================================================================
+
+function createSongCard(song) {
+    const card = document.createElement('div');
+    card.className = 'song-card';
     
-    setTimeout(() => {
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
+    const isFavorite = state.favorites.has(song.id);
+    const favoriteClass = isFavorite ? 'active' : '';
+    
+    card.innerHTML = `
+        <div class="song-card-header">
+            <div class="song-info">
+                <h3 class="song-title">${escapeHtml(song.title)}</h3>
+                <p class="song-artist">${escapeHtml(song.artist)}</p>
+            </div>
+            <div class="song-actions">
+                <button class="btn-icon favorite-btn ${favoriteClass}" data-song-id="${song.id}" title="Add to favorites">
+                    ♡
+                </button>
+                ${song.spotify_url ? `
+                    <a href="${song.spotify_url}" target="_blank" class="btn-icon spotify-btn" title="Open on Spotify">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.093-.899-.513-.12-.42.093-.787.513-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.659.576.48.96-.21.339-.645.457-1.01.276l-.002-.002zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.42.12-.957-.09-1.079-.51-.12-.42.09-.957.51-1.079 4.263-1.3 9.6-.645 13.2 1.575.361.223.54.645.241 1.041l-.001-.001zm.12-3.36C15.24 9.6 8.82 9.21 5.46 10.44c-.42.15-.87-.066-.99-.474-.12-.408.066-.87.474-.99 3.99-1.32 10.99-.957 15.231 1.35.347.182.573.549.421.923-.133.289-.394.468-.771.468-.12 0-.247-.03-.36-.09l.001-.002z"/>
+                        </svg>
+                    </a>
+                ` : ''}
+            </div>
+        </div>
+        <div class="song-metrics">
+            <div class="metric">
+                <span class="metric-label">Energy</span>
+                <div class="metric-bar"><div class="metric-fill" style="width: ${song.energy * 100}%"></div></div>
+                <span class="metric-value">${song.energy.toFixed(2)}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Dance</span>
+                <div class="metric-bar"><div class="metric-fill" style="width: ${song.danceability * 100}%"></div></div>
+                <span class="metric-value">${song.danceability.toFixed(2)}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Tempo</span>
+                <span class="metric-value">${song.tempo} BPM</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Pop</span>
+                <span class="metric-value">${song.popularity}</span>
+            </div>
+        </div>
+        <button class="btn btn-primary select-song-btn" data-song-id="${song.id}">
+            Select & Play
+        </button>
+    `;
+    
+    // Favorite button
+    const favBtn = card.querySelector('.favorite-btn');
+    if (favBtn) {
+        favBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFavorite(song.id);
+            favBtn.classList.toggle('active');
+        });
+    }
+    
+    // Select song button
+    const selectBtn = card.querySelector('.select-song-btn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', () => selectSong(song));
+    }
+    
+    return card;
+}
+
+// ============================================================================
+// SONG SELECTION & SPOTIFY PLAYER
+// ============================================================================
+
+function selectSong(song) {
+    console.log(`♪ Selected: ${song.title}`);
+    state.selectedSong = song;
+    
+    // Add to recently played
+    addToRecentlyPlayed(song);
+    
+    // Show player and load recommendations
+    displaySongPlayer(song);
+    loadRecommendations(song.id);
+    loadInsights(song.id);
+}
+
+function displaySongPlayer(song) {
+    const detail = document.getElementById('song-detail');
+    const content = document.getElementById('selectedSongDetail');
+    
+    if (!detail || !content) return;
+    
+    let playerHTML = `
+        <div class="song-player-card">
+            <div class="player-header">
+                <h2>${escapeHtml(song.title)}</h2>
+                <p class="player-artist">${escapeHtml(song.artist)}</p>
+            </div>
+    `;
+    
+    // Spotify embedded player
+    if (song.spotify_track_id) {
+        playerHTML += `
+            <div class="spotify-player">
+                <iframe style="border-radius: 12px" 
+                    src="https://open.spotify.com/embed/track/${song.spotify_track_id}?utm_source=generator" 
+                    width="100%" height="152" frameBorder="0" allowfullscreen="" 
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy">
+                </iframe>
+            </div>
+        `;
+    }
+    
+    playerHTML += `
+        <div class="player-metrics">
+            <div class="player-stat">
+                <div class="stat-circle" style="--energy: ${song.energy}">
+                    <span>⚡</span>
+                </div>
+                <div class="stat-label">Energy<br><strong>${song.energy.toFixed(2)}</strong></div>
+            </div>
+            <div class="player-stat">
+                <div class="stat-circle" style="--dance: ${song.danceability}">
+                    <span>💃</span>
+                </div>
+                <div class="stat-label">Dance<br><strong>${song.danceability.toFixed(2)}</strong></div>
+            </div>
+            <div class="player-stat">
+                <div class="stat-circle" style="--tempo: ${Math.min(song.tempo / 200, 1)}">
+                    <span>🎼</span>
+                </div>
+                <div class="stat-label">Tempo<br><strong>${song.tempo} BPM</strong></div>
+            </div>
+            <div class="player-stat">
+                <div class="stat-circle" style="--popularity: ${song.popularity / 100}">
+                    <span>⭐</span>
+                </div>
+                <div class="stat-label">Pop<br><strong>${song.popularity}</strong></div>
+            </div>
+        </div>
+    `;
+    
+    if (song.spotify_url) {
+        playerHTML += `
+            <a href="${song.spotify_url}" target="_blank" class="btn btn-primary">
+                Open Full Player on Spotify
+            </a>
+        `;
+    }
+    
+    playerHTML += '</div>';
+    
+    content.innerHTML = playerHTML;
+    detail.classList.remove('hidden');
+}
+
+// ============================================================================
+// RECOMMENDATIONS
+// ============================================================================
+
+async function loadRecommendations(songId) {
+    console.log(`🔄 Loading recommendations for song ${songId}`);
+    
+    try {
+        const response = await fetch('/api/recommend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ song_id: songId, count: 8 })
+        });
+        
+        const data = await response.json();
+        displayRecommendations(data.recommendations);
+    } catch (error) {
+        console.error('❌ Recommendation error:', error);
+    }
+}
+
+function displayRecommendations(recommendations) {
+    const section = document.getElementById('recommendationsSection');
+    const list = document.getElementById('recommendationsList');
+    
+    if (!section || !list) return;
+    
+    list.innerHTML = '';
+    recommendations.forEach((rec, idx) => {
+        const card = createSongCard(rec);
+        card.style.animationDelay = `${idx * 50}ms`;
+        list.appendChild(card);
+    });
+    
+    section.classList.remove('hidden');
+    console.log(`✓ Displayed ${recommendations.length} recommendations`);
+}
+
+// ============================================================================
+// INSIGHTS
+// ============================================================================
+
+async function loadInsights(songId) {
+    console.log(`💡 Loading insights for song ${songId}`);
+    
+    try {
+        const response = await fetch('/api/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ song_id: songId })
+        });
+        
+        const data = await response.json();
+        displayInsights(data.insights, data.mood);
+    } catch (error) {
+        console.error('❌ Insights error:', error);
+    }
+}
+
+function displayInsights(insights, mood) {
+    const section = document.getElementById('insightsSection');
+    const list = document.getElementById('insightsList');
+    
+    if (!section || !list) return;
+    
+    list.innerHTML = `<div class="insights-header">
+        <h4>Insights & Mood Classification</h4>
+        <span class="mood-badge">${escapeHtml(mood)}</span>
+    </div>`;
+    
+    insights.forEach((insight, idx) => {
+        const item = document.createElement('div');
+        item.className = 'insight-item';
+        item.style.animationDelay = `${idx * 50}ms`;
+        item.textContent = insight;
+        list.appendChild(item);
+    });
+    
+    section.classList.remove('hidden');
+}
+
+// ============================================================================
+// MOOD FILTERING
+// ============================================================================
+
+async function filterByMood(mood) {
+    console.log(`🎭 Filtering by mood: ${mood}`);
+    
+    try {
+        const response = await fetch('/api/moods');
+        const data = await response.json();
+        
+        const moodSongs = data.moods[mood] || [];
+        displayMoodResults(mood, moodSongs);
+    } catch (error) {
+        console.error('❌ Mood filter error:', error);
+    }
+}
+
+function displayMoodResults(mood, songs) {
+    const section = document.getElementById('moodFilterResults');
+    const grid = document.getElementById('moodFilterGrid');
+    const title = document.getElementById('moodResultsTitle');
+    
+    if (!section || !grid) return;
+    
+    title.textContent = `${mood} (${songs.length} songs)`;
+    grid.innerHTML = '';
+    
+    songs.forEach((song, idx) => {
+        const card = createSongCard(song);
+        card.style.animationDelay = `${idx * 30}ms`;
+        grid.appendChild(card);
+    });
+    
+    section.classList.remove('hidden');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function clearMoodFilter() {
-    const resultsSection = document.getElementById('moodFilterResults');
-    if (resultsSection) {
-        resultsSection.classList.add('hidden');
-    }
+    const section = document.getElementById('moodFilterResults');
+    if (section) section.classList.add('hidden');
     document.querySelectorAll('.mood-card').forEach(card => {
         card.classList.remove('active');
     });
 }
 
 // ============================================================================
-// NAV HIGHLIGHTING - Show active section as user scrolls
+// BATTLE MODE
 // ============================================================================
 
-function updateNavActive() {
-    const scrollY = window.scrollY;
-    const sections = [
-        { id: 'search', nav: 'search', offset: 0 },
-        { id: 'moods', nav: 'moods', offset: 800 },
-        { id: 'dashboard', nav: 'dashboard', offset: 1600 },
-        { id: 'battle', nav: 'battle', offset: 2400 }
-    ];
+async function handleBattle() {
+    const song1Id = parseInt(document.getElementById('song1').value);
+    const song2Id = parseInt(document.getElementById('song2').value);
     
-    const active = sections.find(s => scrollY >= s.offset) || sections[0];
+    if (!song1Id || !song2Id || song1Id === song2Id) {
+        showMessage('Select two different songs', 'warning');
+        return;
+    }
     
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('data-nav') === active.nav) {
-            link.classList.add('active');
-        }
-    });
+    console.log(`⚔️ Battle: ${song1Id} vs ${song2Id}`);
+    showLoading(true);
+    
+    try {
+        const response = await fetch('/api/battle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ song1_id: song1Id, song2_id: song2Id })
+        });
+        
+        const data = await response.json();
+        displayBattleResults(data);
+    } catch (error) {
+        console.error('❌ Battle error:', error);
+        showMessage('Battle failed', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
-window.addEventListener('scroll', updateNavActive, { passive: true });
+function displayBattleResults(result) {
+    const section = document.getElementById('battleResults');
+    if (!section) return;
+    
+    const winner = result.winner === 'song1' ? result.song1 : result.song2;
+    const loser = result.winner === 'song1' ? result.song2 : result.song1;
+    
+    section.innerHTML = `
+        <div class="battle-container">
+            <div class="battle-card winner">
+                <div class="battle-medal">🏆</div>
+                <h3>${escapeHtml(winner.title)}</h3>
+                <p>${escapeHtml(winner.artist)}</p>
+                <div class="battle-score">${(winner.score * 100).toFixed(1)}</div>
+            </div>
+            <div class="battle-card loser">
+                <h3>${escapeHtml(loser.title)}</h3>
+                <p>${escapeHtml(loser.artist)}</p>
+                <div class="battle-score">${(loser.score * 100).toFixed(1)}</div>
+            </div>
+        </div>
+    `;
+    
+    section.classList.remove('hidden');
+}
 
 // ============================================================================
-// HELPER
+// RECENTLY PLAYED & FAVORITES
 // ============================================================================
+
+function addToRecentlyPlayed(song) {
+    state.recentlyPlayed = [song, ...state.recentlyPlayed.filter(s => s.id !== song.id)].slice(0, 10);
+    localStorage.setItem('sonar_recently_played', JSON.stringify(state.recentlyPlayed));
+}
+
+function loadRecentlyPlayed() {
+    const stored = localStorage.getItem('sonar_recently_played');
+    if (stored) {
+        state.recentlyPlayed = JSON.parse(stored);
+    }
+}
+
+function toggleFavorite(songId) {
+    if (state.favorites.has(songId)) {
+        state.favorites.delete(songId);
+    } else {
+        state.favorites.add(songId);
+    }
+    localStorage.setItem('sonar_favorites', JSON.stringify([...state.favorites]));
+    console.log(`♡ Favorites: ${state.favorites.size} songs`);
+}
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+function showLoading(show) {
+    const loader = document.getElementById('loadingIndicator');
+    if (loader) {
+        loader.style.display = show ? 'flex' : 'none';
+    }
+}
+
+function showMessage(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    // Could add toast notification here
+}
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -642,4 +526,5 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('✓ Polish & mood filtering initialized');
+// Initialize on load
+console.log('✓ Sonar.ai script loaded');
